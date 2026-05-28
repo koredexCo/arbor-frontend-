@@ -6,17 +6,34 @@ import type { VisibleGraph } from "../types/visibleGraph";
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Returns the current Supabase session JWT for API requests.
-// Falls back to 'dev_token' when running against a local backend with DEV_MODE=true.
+// Refreshes the session if it exists but the access_token may be stale.
 export async function getAccessToken(): Promise<string> {
+  // Try to get the existing session first
   const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token ?? 'dev_token';
+
+  if (!session) {
+    throw new Error("No active session. Please log in.");
+  }
+
+  // If the token is close to expiry (within 60s), refresh it proactively
+  const expiresAt = session.expires_at ?? 0;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (expiresAt - nowSeconds < 60) {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed.session?.access_token) {
+      return refreshed.session.access_token;
+    }
+  }
+
+  return session.access_token;
 }
 
 // Helper to automatically attach JWT to requests
 async function fetchWithAuth(path: string, options: RequestInit = {}) {
-  const token = await getAccessToken();
-  
-  if (!token) {
+  let token: string;
+  try {
+    token = await getAccessToken();
+  } catch {
     throw new Error("Authentication required. Please log in.");
   }
 
