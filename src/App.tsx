@@ -15,6 +15,8 @@ import { AccountPage } from "./pages/AccountPage";
 import { JoinPage } from "./pages/JoinPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TermsPage } from "./pages/TermsPage";
+import { ProjectPage } from "./pages/ProjectPage";
+import { TeamPage } from "./pages/TeamPage";
 
 // Ops IDE Imports
 import { OpsLayout } from "./components/OpsLayout";
@@ -104,6 +106,16 @@ function App() {
 
         {/* Join via invite — public, handles own auth state */}
         <Route path="/join" element={<JoinPage />} />
+
+        {/* Team project pages */}
+        <Route
+          path="/project/:projectId"
+          element={session?.access_token ? <ProjectPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/team/:projectId"
+          element={session?.access_token ? <TeamPage /> : <Navigate to="/" replace />}
+        />
 
         {/* Static public pages */}
         <Route path="/privacy" element={<PrivacyPage />} />

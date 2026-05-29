@@ -42,10 +42,7 @@ export function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleProjectClick = (project: any) => {
-    // Expand the project inline to show its conversations.
-    // Auto-creating a conversation here fails when no default tree exists yet,
-    // so we let users create conversations manually from the expanded view.
-    setSelectedProject(project);
+    navigate(`/project/${project.id}`);
   };
 
   // Admin panel state
