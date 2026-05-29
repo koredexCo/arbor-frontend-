@@ -14,6 +14,7 @@ const PROVIDERS = [
   { id: "claude", name: "Anthropic (Claude)", hint: "sk-ant-..." },
   { id: "gemini", name: "Google Gemini", hint: "AI..." },
   { id: "grok", name: "xAI (Grok)", hint: "xai-..." },
+  { id: "openrouter", name: "OpenRouter", hint: "sk-or-v1-..." },
 ];
 
 export function SettingsPage() {
