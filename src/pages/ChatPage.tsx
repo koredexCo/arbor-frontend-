@@ -257,18 +257,24 @@ export function ChatPage() {
       setIsStreaming(true);
       setStreamingContent("");
       
-      await sendMessageStream(
-        activeBranchId,
-        content,
-        (chunk) => {
-          setStreamingContent(prev => prev + chunk);
-        },
-        (node) => {
-          setIsStreaming(false);
-          setStreamingContent("");
-          fetchGraph(activeBranchId);
-        }
-      );
+      try {
+        await sendMessageStream(
+          activeBranchId,
+          content,
+          (chunk) => {
+            setStreamingContent(prev => prev + chunk);
+          },
+          (node) => {
+            setIsStreaming(false);
+            setStreamingContent("");
+            fetchGraph(activeBranchId);
+          }
+        );
+      } catch (err: any) {
+        setIsStreaming(false);
+        setStreamingContent("");
+        alert(err.message || "Failed to send message");
+      }
     },
     [activeBranchId, appendMessage, fetchGraph]
   );

@@ -78,31 +78,63 @@ export async function sendMessageStream(
     body: JSON.stringify({ branch_id: branchId, content })
   })
   
-  const reader = response.body!.getReader()
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    throw new Error(`API Error (${response.status}): ${errText || response.statusText}`);
+  }
+  
+  if (!response.body) {
+    throw new Error("No response body received from stream");
+  }
+
+  const reader = response.body.getReader()
   const decoder = new TextDecoder()
   
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    
-    const text = decoder.decode(value, { stream: true })
-    const lines = text.split('\n\n').filter(Boolean)
-    
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-            const data = JSON.parse(line.slice(6))
-            if (data.chunk) {
-              onChunk(data.chunk)
+  try {
+    let buffer = ""
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+      
+      buffer += decoder.decode(value, { stream: true })
+      let boundary = buffer.indexOf('\n\n')
+      
+      while (boundary !== -1) {
+        const block = buffer.slice(0, boundary)
+        buffer = buffer.slice(boundary + 2)
+        
+        const lines = block.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (trimmed.startsWith('data: ')) {
+            const rawData = trimmed.slice(6).trim()
+            if (!rawData) continue
+            try {
+              const data = JSON.parse(rawData)
+              if (data.error) {
+                throw new Error(data.error)
+              }
+              if (data.chunk) {
+                onChunk(data.chunk)
+              }
+              if (data.done) {
+                onDone(data.node)
+              }
+            } catch (e) {
+              if (e instanceof Error && !e.message.includes("JSON")) {
+                throw e
+              }
+              console.error("Error parsing stream line", e)
             }
-            if (data.done) {
-              onDone(data.node)
-            }
-        } catch (e) {
-            console.error("Error parsing stream line", e)
+          }
         }
+        boundary = buffer.indexOf('\n\n')
       }
     }
+  } finally {
+    reader.releaseLock()
   }
 }
 
