@@ -23,30 +23,30 @@ export function NewBranchModal({ isOpen, onClose, onConfirm, availableModels = [
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center 
+    <div className="fixed inset-0 bg-white backdrop- flex items-center 
                     justify-center z-50 animate-fade-in">
-      <div className="bg-[#111111] rounded-2xl p-6 w-[420px] max-w-[90vw]
-                      border border-[#1e1e1e] shadow-2xl shadow-black/50
+      <div className="bg-white rounded p-6 w-[420px] max-w-[90vw]
+                      border border-[#e8e8e8] shadow-md shadow-black/50
                       animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <GitBranch size={20} className="text-white" />
+            <div className="w-10 h-10 rounded bg-white/20 flex items-center justify-center">
+              <GitBranch size={20} className="text-[#0a0a0a]" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-[#0a0a0a]">
                 Create New Branch
               </h3>
-              <p className="text-xs text-[#555555]">
+              <p className="text-xs text-[#52504b]">
                 Explore a different direction
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center
-                       text-[#555555] hover:text-white hover:bg-[#1f1f1f]
+            className="w-8 h-8 rounded flex items-center justify-center
+                       text-[#52504b] hover:text-[#0a0a0a] hover:bg-white
                        transition-colors"
           >
             <X size={18} />
@@ -54,10 +54,10 @@ export function NewBranchModal({ isOpen, onClose, onConfirm, availableModels = [
         </div>
 
         {/* Description */}
-        <div className="bg-[#1f1f1f]/50 rounded-xl p-3 mb-5 border border-[#1a1a1a]">
-          <p className="text-sm text-[#888888] leading-relaxed">
+        <div className="bg-white rounded p-3 mb-5 border border-[#1a1a1a]">
+          <p className="text-sm text-[#52504b] leading-relaxed">
             This will create a new branch from the selected message. The new 
-            branch <span className="text-[#a0a0a0] font-medium">inherits full context</span> from 
+            branch <span className="text-[#52504b] font-medium">inherits full context</span> from 
             the parent — no information is lost.
           </p>
         </div>
@@ -65,7 +65,7 @@ export function NewBranchModal({ isOpen, onClose, onConfirm, availableModels = [
         {/* Input */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm text-[#888888] mb-2 font-medium">
+            <label className="block text-sm text-[#52504b] mb-2 font-medium">
               Branch Name
             </label>
             <input
@@ -83,13 +83,13 @@ export function NewBranchModal({ isOpen, onClose, onConfirm, availableModels = [
           </div>
 
           <div>
-            <label className="block text-sm text-[#888888] mb-2 font-medium">
+            <label className="block text-sm text-[#52504b] mb-2 font-medium">
               Model
             </label>
             <select
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              className="input-field bg-[#1f1f1f] border-[#222222] text-white"
+              className="input-field bg-white border-[#e8e8e8] text-[#0a0a0a]"
             >
               {availableModels.map((m) => (
                 <option key={m.id} value={m.id}>

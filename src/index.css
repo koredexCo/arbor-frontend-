@@ -1,12 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   BASE LAYER - Global resets and defaults
-   ============================================================ */
+/* ── THEME TOKENS ─────────────────────── */
+:root, [data-theme="light"] {
+  --bg:        #fdfcf9;
+  --bg-2:      #f4f2ee;
+  --ink:       #111110;
+  --ink-2:     #3a3935;
+  --body:      #52504b;
+  --muted:     #999893;
+  --rule:      #e4e2dc;
+  --rule-2:    #cccac4;
+  --nav-bg:    rgba(253,252,249,0.93);
+  --t-track:   #e4e2dc;
+  --t-thumb:   #111110;
+}
+
+[data-theme="dark"] {
+  --bg:        #0e0d0b;
+  --bg-2:      #161512;
+  --ink:       #f0ede8;
+  --ink-2:     #c8c5be;
+  --body:      #9a9790;
+  --muted:     #5a574f;
+  --rule:      #1e1d1a;
+  --rule-2:    #2e2c28;
+  --nav-bg:    rgba(14,13,11,0.93);
+  --t-track:   #2a2926;
+  --t-thumb:   #f0ede8;
+}
 
 @layer base {
   * {
@@ -19,20 +42,26 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background .3s, color .3s;
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0a0a0a;
-    color: #ffffff;
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--ink);
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background .3s, color .3s;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "DM Serif Display", serif;
   }
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -40,300 +69,119 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
-    border-radius: 2px;
+    background: var(--rule-2);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #3a3a3a;
+    background: var(--muted);
   }
 
-  /* Selection */
   ::selection {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--ink);
   }
 }
 
-/* ============================================================
-   COMPONENT LAYER - Reusable component styles
-   ============================================================ */
-
 @layer components {
-  /* Glassmorphism card */
-  .glass-card {
-    @apply bg-[#111111] backdrop-blur-xl border border-[#2a2a2a]
-           rounded-2xl shadow-xl;
-  }
-
-  .glass-card-hover {
-    @apply glass-card transition-all duration-300
-           hover:border-[#3a3a3a] hover:bg-[#141414];
-  }
-
-  /* Primary button */
+  /* Buttons */
   .btn-primary {
-    @apply bg-white text-black font-semibold px-6 py-2.5 rounded-xl
-           hover:bg-[#f0f0f0] active:bg-[#e0e0e0]
-           transition-all duration-200
-           disabled:opacity-30 disabled:cursor-not-allowed
-           disabled:hover:bg-white;
+    @apply bg-[#0a0a0a] text-white font-medium px-6 py-2.5 rounded text-sm
+           hover:bg-[#222222] transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  /* Secondary button */
   .btn-secondary {
-    @apply bg-[#1a1a1a] text-white font-medium px-6 py-2.5
-           rounded-xl border border-[#2a2a2a]
-           hover:bg-[#222222] hover:border-[#3a3a3a]
-           active:bg-[#1a1a1a]
-           transition-all duration-200;
+    @apply bg-white text-[#0a0a0a] font-medium px-6 py-2.5 rounded text-sm
+           border border-[#e8e8e8]
+           hover:bg-[#f8f8f8] transition-colors;
   }
 
-  /* Ghost button */
   .btn-ghost {
-    @apply text-[#666666] font-medium px-4 py-2 rounded-xl
-           hover:text-white hover:bg-[#1a1a1a]
-           active:bg-[#1f1f1f]
-           transition-all duration-200;
+    @apply bg-transparent text-[#0a0a0a] font-medium px-4 py-2 rounded text-sm
+           hover:bg-[#f8f8f8] transition-colors;
   }
 
-  /* Input field */
+  /* Input fields */
   .input-field {
-    @apply w-full bg-[#111111] text-white rounded-xl px-4 py-3
-           border border-[#2a2a2a]
-           placeholder:text-[#444444]
-           focus:outline-none focus:border-[#555555]
-           focus:ring-1 focus:ring-[#444444]
+    @apply w-full bg-white text-[#0a0a0a] rounded-sm px-4 py-3
+           border border-[#e8e8e8]
+           placeholder:text-[#999999]
+           focus:outline-none focus:border-[#0a0a0a]
+           focus:ring-1 focus:ring-[#0a0a0a]
            transition-all duration-200;
   }
 
-  /* Badge */
+  /* Badges */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full
-           text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded
+           text-xs font-medium bg-white border border-[#e8e8e8] text-[#0a0a0a];
   }
-
-  .badge-brand {
-    @apply badge bg-white/10 text-white border border-white/20;
-  }
-
-  .badge-success {
-    @apply badge bg-white/10 text-white border border-white/20;
-  }
-
-  .badge-warning {
-    @apply badge bg-[#222222] text-[#a0a0a0] border border-[#333333];
-  }
-
-  /* Message highlight animation */
-  .message-highlight-target {
-    animation: messageHighlight 2s ease-out;
-  }
-
-  /* Loading skeleton */
-  .skeleton {
-    @apply bg-[#1a1a1a] rounded-lg animate-pulse;
+  .badge-brand, .badge-success, .badge-warning {
+    @apply badge;
   }
 
   /* Sidebar item */
   .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl
-           text-[#666666] font-medium text-sm
-           hover:bg-[#1a1a1a] hover:text-white
+    @apply flex items-center gap-3 px-3 py-2.5 rounded
+           text-[#52504b] font-medium text-sm
+           hover:bg-[#f8f8f8] hover:text-[#0a0a0a]
            transition-all duration-200 cursor-pointer;
   }
 
   .sidebar-item-active {
-    @apply sidebar-item bg-[#1a1a1a] text-white
-           border-l-2 border-l-white border-y-0 border-r-0 rounded-l-none;
-  }
-
-  /* Gradient text (monochrome) */
-  .gradient-text {
-    @apply bg-clip-text text-transparent
-           bg-gradient-to-r from-[#666666] via-white to-[#a0a0a0];
-  }
-
-  /* Gradient border */
-  .gradient-border {
-    position: relative;
-  }
-
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: linear-gradient(135deg, #2a2a2a, #666666, #ffffff);
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  /* Dot pattern background */
-  .dot-pattern {
-    background-image: radial-gradient(
-      rgba(255, 255, 255, 0.04) 1px,
-      transparent 1px
-    );
-    background-size: 24px 24px;
+    @apply sidebar-item bg-[#f8f8f8] text-[#0a0a0a]
+           border-l-2 border-l-[#0a0a0a] border-y-0 border-r-0 rounded-l-none;
   }
 }
 
-/* ============================================================
-   UTILITY LAYER
-   ============================================================ */
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Utilities to forcefully remove glowing, gradients, etc */
+.gradient-text, .gradient-border, .dot-pattern {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }
 
-/* ============================================================
-   KEYFRAME ANIMATIONS
-   ============================================================ */
-
-@keyframes messageHighlight {
-  0% {
-    background-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: 0 0 0 0 transparent;
-  }
+.gradient-border::before {
+  display: none !important;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* Typing indicator */
-@keyframes typingBounce {
-  0%, 60%, 100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-4px);
-  }
-}
-
-.typing-dot {
-  animation: typingBounce 1.4s ease-in-out infinite;
-}
-
-.typing-dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-
-/* ============================================================
-   REACT FLOW - Monochrome overrides
-   ============================================================ */
-
-.react-flow__node {
-  transition: all 0.2s ease;
-}
-
+/* React flow light overrides */
 .react-flow__edge-path {
-  stroke: #2a2a2a;
-  stroke-width: 1.5;
+  stroke: #e8e8e8;
 }
-
 .react-flow__background {
-  background-color: #0a0a0a !important;
+  background-color: #ffffff !important;
 }
-
 .react-flow__controls {
-  background: #111111;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.react-flow__controls-button {
-  background: #111111;
-  border-bottom: 1px solid #2a2a2a;
-  fill: #666666;
-}
-
-.react-flow__controls-button:hover {
-  background: #1a1a1a;
-  fill: #ffffff;
-}
-
-.react-flow__minimap {
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-}
-
-/* ============================================================
-   PREMIUM CHAT UI ENHANCEMENTS
-   ============================================================ */
-
-/* Frosted glass header */
-.chat-header {
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid #1a1a1a;
-}
-
-/* Message area subtle texture */
-.message-area {
-  background: #0a0a0a;
-}
-
-/* Premium send button */
-.send-btn {
   background: #ffffff;
-  color: #000000;
-  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+.react-flow__controls-button {
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  fill: #0a0a0a;
+}
+.react-flow__minimap {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+/* Premium UI light overrides */
+.chat-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+}
+.message-area {
+  background: #ffffff;
+}
+.send-btn {
+  background: #0a0a0a;
+  color: #ffffff;
+  border-radius: 4px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -342,36 +190,17 @@
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
-
 .send-btn:hover:not(:disabled) {
-  background: #e0e0e0;
-  transform: scale(1.05);
-}
-
-.send-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.send-btn:disabled {
   background: #222222;
-  color: #444444;
+}
+.send-btn:disabled {
+  background: #e8e8e8;
+  color: #999999;
   cursor: not-allowed;
 }
-
-/* Input toolbar subtle separator */
 .input-toolbar-sep {
   width: 1px;
   height: 14px;
-  background: #2a2a2a;
+  background: #e8e8e8;
   margin: 0 4px;
-}
-
-/* Streaming cursor animation */
-.cursor {
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
 }

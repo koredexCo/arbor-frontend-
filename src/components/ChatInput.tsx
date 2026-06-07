@@ -155,7 +155,7 @@ export function ChatInput({
         : "OpenRouter";
         
       byokWarning = (
-        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-[#2a2a2a] animate-fade-in">
+        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded border border-[#e8e8e8] animate-fade-in">
           <AlertTriangle size={12} />
           <span>
             You are using Your Own Keys (BYOK), but you don't have a {providerName} key stored. 
@@ -168,11 +168,11 @@ export function ChatInput({
 
   return (
     <>
-      <div className="border-t border-[#141414] bg-[#0a0a0a] p-4 w-full">
+      <div className="border-t border-[#141414] bg-white p-4 w-full">
         <div className="flex flex-col gap-2 max-w-4xl mx-auto">
           {/* Main input row */}
-          <div className="flex items-end gap-2 bg-[#111111] border border-[#222222] rounded-2xl px-4 py-3
-                          focus-within:border-[#3a3a3a] transition-all duration-200">
+          <div className="flex items-end gap-2 bg-white border border-[#e8e8e8] rounded px-4 py-3
+                          focus-within:border-[#e8e8e8] transition-all duration-200">
             <textarea
               ref={inputRef}
               value={input}
@@ -181,9 +181,9 @@ export function ChatInput({
               placeholder="Type a message..."
               rows={1}
               disabled={sending || isGeneratingImage}
-              className="flex-1 bg-transparent text-white text-sm resize-none outline-none
+              className="flex-1 bg-transparent text-[#0a0a0a] text-sm resize-none outline-none
                          placeholder:text-[#333333] min-h-[24px] max-h-[160px]
-                         disabled:opacity-50"
+                         disabled:"
             />
             <button
               onClick={handleSend}
@@ -203,18 +203,18 @@ export function ChatInput({
             <div className="relative" ref={selectorRef}>
               <button
                 onClick={() => setModelSelectorOpen(!modelSelectorOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-transparent
-                           border border-[#1e1e1e] text-[10px] text-[#555555]
-                           hover:bg-[#111111] hover:text-[#888888] hover:border-[#2a2a2a] transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-transparent
+                           border border-[#e8e8e8] text-[10px] text-[#52504b]
+                           hover:bg-white hover:text-[#52504b] hover:border-[#e8e8e8] transition-all"
               >
                 <Sparkles size={10} />
                 {availableModels.find(m => m.id === normalizedActiveModelId)?.name || normalizedActiveModelId || "Claude 3.5 Sonnet"}
               </button>
 
               {modelSelectorOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#0d0d0d] border border-[#222222] rounded-xl shadow-2xl overflow-hidden z-50 animate-scale-in">
+                <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#0d0d0d] border border-[#e8e8e8] rounded shadow-md overflow-hidden z-50 animate-scale-in">
                   <div className="p-2 border-b border-[#1a1a1a]">
-                    <span className="text-[10px] font-semibold text-[#444444] px-2 uppercase tracking-widest">Model</span>
+                    <span className="text-[10px] font-semibold text-[#52504b] px-2 uppercase tracking-widest">Model</span>
                   </div>
                   <div className="max-h-64 overflow-y-auto p-1">
                     {availableModels.map((model) => (
@@ -224,10 +224,10 @@ export function ChatInput({
                           onModelChange(model.id);
                           setModelSelectorOpen(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] transition-all
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded text-[11px] transition-all
                           ${normalizedActiveModelId === model.id
                             ? "bg-white text-black font-medium"
-                            : "text-[#888888] hover:bg-[#1a1a1a] hover:text-white"}`}
+                            : "text-[#52504b] hover:bg-white hover:text-[#0a0a0a]"}`}
                       >
                         {model.name}
                       </button>
@@ -242,8 +242,8 @@ export function ChatInput({
             <button
               onClick={() => setCompareModalOpen(true)}
               title="Compare Models"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-[#444444]
-                         hover:text-[#888888] hover:bg-[#111111] transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[10px] text-[#52504b]
+                         hover:text-[#52504b] hover:bg-white transition-all"
             >
               <GitBranch size={10} />
               Compare
@@ -253,8 +253,8 @@ export function ChatInput({
               onClick={handleGenerateImage}
               disabled={!input.trim() || isGeneratingImage}
               title="Generate Image"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-[#444444]
-                         hover:text-[#888888] hover:bg-[#111111] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[10px] text-[#52504b]
+                         hover:text-[#52504b] hover:bg-white transition-all disabled: disabled:cursor-not-allowed"
             >
               <ImageIcon size={10} />
               Image
@@ -263,8 +263,8 @@ export function ChatInput({
             <button
               onClick={() => setVideoModalOpen(true)}
               title="Generate Video"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-[#444444]
-                         hover:text-[#888888] hover:bg-[#111111] transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[10px] text-[#52504b]
+                         hover:text-[#52504b] hover:bg-white transition-all"
             >
               <Play size={10} />
               Video
@@ -279,13 +279,13 @@ export function ChatInput({
 
       {/* Video coming soon modal */}
       {videoModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-[#111111] rounded-2xl p-6 w-[320px] border border-[#1e1e1e] text-center animate-scale-in">
-            <div className="w-12 h-12 rounded-full bg-[#1a1a1a] flex items-center justify-center mx-auto mb-4">
-              <Play size={24} className="text-[#a0a0a0]" />
+        <div className="fixed inset-0 bg-white backdrop- flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white rounded p-6 w-[320px] border border-[#e8e8e8] text-center animate-scale-in">
+            <div className="w-12 h-12 rounded bg-white flex items-center justify-center mx-auto mb-4">
+              <Play size={24} className="text-[#52504b]" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Coming Soon</h3>
-            <p className="text-sm text-[#888888] mb-6">
+            <h3 className="text-lg font-semibold text-[#0a0a0a] mb-2">Coming Soon</h3>
+            <p className="text-sm text-[#52504b] mb-6">
               AI Video generation is currently in development and will be available in the next release.
             </p>
             <button onClick={() => setVideoModalOpen(false)} className="btn-primary w-full">

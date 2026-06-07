@@ -29,10 +29,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#666666] to-white 
-                          flex items-center justify-center shadow-lg shadow-none animate-pulse-soft">
+          <div className="w-12 h-12 rounded bg-white  to-white 
+                          flex items-center justify-center shadow-lg shadow-none -soft">
             <svg
               width="22"
               height="22"
@@ -49,7 +49,7 @@ function App() {
               <path d="M18 9a9 9 0 0 1-9 9" />
             </svg>
           </div>
-          <p className="text-sm text-[#555555] font-medium">Loading...</p>
+          <p className="text-sm text-[#52504b] font-medium">Loading...</p>
         </div>
       </div>
     );

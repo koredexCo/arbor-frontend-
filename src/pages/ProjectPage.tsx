@@ -108,15 +108,15 @@ export function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 size={32} className="text-[#a0a0a0] animate-spin" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 size={32} className="text-[#52504b] animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
         <p className="text-red-400 text-sm">{error}</p>
         <button onClick={() => navigate("/dashboard?tab=team")} className="btn-ghost text-sm">
           ← Back to Dashboard
@@ -134,39 +134,39 @@ export function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="bg-[#111111]/80 backdrop-blur-xl border-b border-[#1e1e1e] sticky top-0 z-40">
+      <nav className="bg-white backdrop- border-b border-[#e8e8e8] sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/dashboard?tab=team")}
-              className="p-2 rounded-xl text-[#888888] hover:text-white hover:bg-[#1f1f1f] transition-all"
+              className="p-2 rounded text-[#52504b] hover:text-[#0a0a0a] hover:bg-white transition-all"
             >
               <ArrowLeft size={18} />
             </button>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#333333] to-[#666666] flex items-center justify-center">
-              <FolderTree size={15} className="text-white" />
+            <div className="w-8 h-8 rounded bg-white   flex items-center justify-center">
+              <FolderTree size={15} className="text-[#0a0a0a]" />
             </div>
             <div>
-              <span className="text-base font-bold text-white">
+              <span className="text-base font-bold text-[#0a0a0a]">
                 {project?.name ?? "Team Project"}
               </span>
               {project?.description && (
-                <p className="text-xs text-[#555555] leading-none mt-0.5">{project.description}</p>
+                <p className="text-xs text-[#52504b] leading-none mt-0.5">{project.description}</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {members.length > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a1a1a] border border-[#222222]">
-                <Users size={13} className="text-[#555555]" />
-                <span className="text-xs text-[#888888]">{members.length} member{members.length !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white border border-[#e8e8e8]">
+                <Users size={13} className="text-[#52504b]" />
+                <span className="text-xs text-[#52504b]">{members.length} member{members.length !== 1 ? "s" : ""}</span>
               </div>
             )}
             <button
               onClick={() => navigate(`/team/${projectId}`)}
-              className="p-2 rounded-xl text-[#888888] hover:text-white hover:bg-[#1f1f1f] transition-all"
+              className="p-2 rounded text-[#52504b] hover:text-[#0a0a0a] hover:bg-white transition-all"
               title="Manage team"
             >
               <Settings2 size={16} />
@@ -178,12 +178,12 @@ export function ProjectPage() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         {trees.length === 0 ? (
           /* ── No trees yet ── */
-          <div className="glass-card p-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[#1a1a1a] flex items-center justify-center mx-auto mb-6">
-              <GitBranch size={28} className="text-[#444444]" />
+          <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-16 text-center">
+            <div className="w-16 h-16 rounded bg-white flex items-center justify-center mx-auto mb-6">
+              <GitBranch size={28} className="text-[#52504b]" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">No conversation trees yet</h2>
-            <p className="text-[#555555] text-sm mb-8 max-w-sm mx-auto">
+            <h2 className="text-xl font-bold text-[#0a0a0a] mb-2">No conversation trees yet</h2>
+            <p className="text-[#52504b] text-sm mb-8 max-w-sm mx-auto">
               This project doesn't have a main tree set up yet. A tree organises all branched conversations for your team.
             </p>
             <button
@@ -211,29 +211,29 @@ export function ProjectPage() {
               const isCreating = creatingConv === tree.id;
 
               return (
-                <div key={tree.id} className="glass-card overflow-hidden">
+                <div key={tree.id} className="bg-white border border-[#e8e8e8] rounded shadow-sm overflow-hidden">
                   {/* Tree header */}
-                  <div className="px-6 py-4 border-b border-[#1e1e1e] flex items-center justify-between bg-[#111111]/40">
+                  <div className="px-6 py-4 border-b border-[#e8e8e8] flex items-center justify-between bg-white">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
-                        <GitBranch size={15} className="text-[#a0a0a0]" />
+                      <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
+                        <GitBranch size={15} className="text-[#52504b]" />
                       </div>
                       <div>
-                        <span className="text-sm font-bold text-white">{tree.name}</span>
+                        <span className="text-sm font-bold text-[#0a0a0a]">{tree.name}</span>
                         {tree.is_default && (
-                          <span className="ml-2 text-[10px] font-bold text-[#888888] bg-[#1a1a1a] border border-[#2a2a2a] rounded px-1.5 py-0.5">
+                          <span className="ml-2 text-[10px] font-bold text-[#52504b] bg-white border border-[#e8e8e8] rounded px-1.5 py-0.5">
                             DEFAULT
                           </span>
                         )}
                         {tree.shared_context && (
-                          <p className="text-xs text-[#555555] mt-0.5 max-w-md truncate">{tree.shared_context}</p>
+                          <p className="text-xs text-[#52504b] mt-0.5 max-w-md truncate">{tree.shared_context}</p>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => handleCreateConversation(tree.id)}
                       disabled={isCreating}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#a0a0a0] hover:text-white hover:bg-[#1a1a1a] border border-[#222222] hover:border-[#333333] transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold text-[#52504b] hover:text-[#0a0a0a] hover:bg-white border border-[#e8e8e8] hover:border-[#e8e8e8] transition-all disabled:"
                     >
                       {isCreating ? (
                         <Loader2 size={12} className="animate-spin" />
@@ -248,7 +248,7 @@ export function ProjectPage() {
                   {treeConvs.length === 0 ? (
                     <div className="px-6 py-10 text-center">
                       <MessageSquare size={24} className="mx-auto text-[#333333] mb-3" />
-                      <p className="text-sm text-[#444444]">No conversations yet.</p>
+                      <p className="text-sm text-[#52504b]">No conversations yet.</p>
                       <p className="text-xs text-[#333333] mt-1">Click "New Conversation" to start one.</p>
                     </div>
                   ) : (
@@ -257,19 +257,19 @@ export function ProjectPage() {
                         <button
                           key={conv.id}
                           onClick={() => handleOpenConversation(conv.id)}
-                          className="w-full flex items-center justify-between px-6 py-4 hover:bg-[#111111]/60 transition-all group text-left"
+                          className="w-full flex items-center justify-between px-6 py-4 hover:bg-white transition-all group text-left"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0 group-hover:bg-[#222222] transition-colors">
-                              <MessageSquare size={13} className="text-[#555555] group-hover:text-[#888888]" />
+                            <div className="w-7 h-7 rounded bg-white flex items-center justify-center flex-shrink-0 group-hover:bg-white transition-colors">
+                              <MessageSquare size={13} className="text-[#52504b] group-hover:text-[#52504b]" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-white truncate group-hover:text-[#e0e0e0]">
+                              <p className="text-sm font-medium text-[#0a0a0a] truncate group-hover:text-[#e0e0e0]">
                                 {conv.title || "Untitled Conversation"}
                               </p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <Clock size={10} className="text-[#444444]" />
-                                <span className="text-[10px] text-[#444444]">
+                                <Clock size={10} className="text-[#52504b]" />
+                                <span className="text-[10px] text-[#52504b]">
                                   {new Date(conv.created_at).toLocaleDateString(undefined, {
                                     month: "short", day: "numeric", year: "numeric",
                                   })}

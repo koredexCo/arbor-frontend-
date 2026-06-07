@@ -10,9 +10,9 @@ export function BranchButton({ onClick, label = "Branch", size = "sm" }: Props) 
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-lg font-medium
-                  text-white bg-white/10 border border-[#2a2a2a]
-                  hover:bg-white/20 hover:border-[#2a2a2a]
+      className={`inline-flex items-center gap-1.5 rounded font-medium
+                  text-[#0a0a0a] bg-white/10 border border-[#e8e8e8]
+                  hover:bg-white/20 hover:border-[#e8e8e8]
                   active:bg-white/25
                   transition-all duration-200
                   ${size === "sm" ? "text-xs px-2.5 py-1" : "text-sm px-3.5 py-1.5"}`}

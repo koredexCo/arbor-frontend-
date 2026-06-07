@@ -11,5 +11,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl ?? 'http://127.0.0.1:54321',
-  supabaseAnonKey ?? ''
+  supabaseAnonKey ?? 'dummy_key_to_prevent_crash'
 );

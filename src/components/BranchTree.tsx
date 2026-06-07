@@ -35,12 +35,12 @@ function MessageNode({ data }: { data: MessageNodeData }) {
   
   return (
     <div
-      className={`px-3 py-2 rounded-lg border transition-all duration-200 min-w-[180px] max-w-[240px] relative
+      className={`px-3 py-2 rounded border transition-all duration-200 min-w-[180px] max-w-[240px] relative
         ${data.fork_origin
-          ? "bg-[#1a1a1a] border-[#e0e0e0] shadow-lg"
+          ? "bg-white border-[#e0e0e0] shadow-lg"
           : data.local
-            ? "bg-[#1f1f1f] border-[#666666] shadow-md"
-            : "bg-[#141414] border-[#2a2a2a] opacity-60"
+            ? "bg-white border-[#666666] shadow-md"
+            : "bg-white border-[#e8e8e8] "
         }
         ${data.isActive ? "ring-2 ring-[#ffffff] ring-offset-2 ring-offset-[#0a0a0a]" : ""}
       `}
@@ -50,32 +50,32 @@ function MessageNode({ data }: { data: MessageNodeData }) {
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           {data.fork_origin ? (
-            <Waypoints size={12} className="text-[#888888]" />
+            <Waypoints size={12} className="text-[#52504b]" />
           ) : isAssistant ? (
-            <Terminal size={12} className="text-[#a0a0a0]" />
+            <Terminal size={12} className="text-[#52504b]" />
           ) : (
-            <MessageSquare size={12} className="text-[#888888]" />
+            <MessageSquare size={12} className="text-[#52504b]" />
           )}
           <span className={`text-[10px] font-bold uppercase tracking-wider
-            ${data.fork_origin ? "text-[#e0e0e0]" : isAssistant ? "text-white" : "text-[#a0a0a0]"}`}>
+            ${data.fork_origin ? "text-[#e0e0e0]" : isAssistant ? "text-[#0a0a0a]" : "text-[#52504b]"}`}>
             {data.fork_origin ? "Fork Origin" : data.role}
           </span>
         </div>
         {data.inherited && (
-          <span className="text-[8px] bg-[#1f1f1f] text-[#555555] px-1 rounded border border-[#222222]">
+          <span className="text-[8px] bg-white text-[#52504b] px-1 rounded border border-[#e8e8e8]">
             INHERITED
           </span>
         )}
       </div>
 
       <p className={`text-[11px] line-clamp-2 leading-relaxed
-        ${data.inherited ? "text-[#555555]" : "text-[#e0e0e0]"}`}>
+        ${data.inherited ? "text-[#52504b]" : "text-[#e0e0e0]"}`}>
         {data.content}
       </p>
 
       {data.fork_origin && (
-        <div className="mt-1.5 pt-1.5 border-t border-[#2a2a2a]">
-          <span className="text-[8px] text-[#555555] font-medium">Divergence Point</span>
+        <div className="mt-1.5 pt-1.5 border-t border-[#e8e8e8]">
+          <span className="text-[8px] text-[#52504b] font-medium">Divergence Point</span>
         </div>
       )}
 
@@ -192,9 +192,9 @@ function GraphInternal({ graph, activeBranchId }: Props) {
 
   if (!graph || nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-[#444444]">
+      <div className="flex items-center justify-center h-full text-[#52504b]">
         <div className="text-center">
-          <Waypoints size={32} className="mx-auto mb-2 opacity-50 animate-pulse" />
+          <Waypoints size={32} className="mx-auto mb-2  " />
           <p className="text-sm">Projecting cognitive graph...</p>
         </div>
       </div>
@@ -212,7 +212,7 @@ function GraphInternal({ graph, activeBranchId }: Props) {
     >
       <Controls
         showInteractive={false}
-        className="!bg-[#1f1f1f] !border-[#222222] !rounded-xl"
+        className="!bg-white !border-[#e8e8e8] !rounded"
       />
       <Background
         variant={BackgroundVariant.Dots}

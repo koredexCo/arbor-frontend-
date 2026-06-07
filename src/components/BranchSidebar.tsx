@@ -70,23 +70,23 @@ export function BranchSidebar({
   const activeBranch = branches.find(b => b.id === activeBranchId);
 
   return (
-    <div className="w-64 bg-[#0d0d0d] border-r border-[#2a2a2a] 
+    <div className="w-64 bg-[#0d0d0d] border-r border-[#e8e8e8] 
                     flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-[#2a2a2a]">
+      <div className="p-4 border-b border-[#e8e8e8]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-              <TreePine size={14} className="text-white" />
+            <div className="w-7 h-7 rounded bg-white/20 flex items-center justify-center">
+              <TreePine size={14} className="text-[#0a0a0a]" />
             </div>
-            <h3 className="text-sm font-semibold text-[#c0c0c0] uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-[#52504b] uppercase tracking-wider">
               Branches
             </h3>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setViewMode(v => v === 'tree' ? 'list' : 'tree')}
-              className={`p-1.5 rounded-lg transition-all text-xs text-[#555555] hover:text-white hover:bg-[#1f1f1f] border border-transparent`}
+              className={`p-1.5 rounded transition-all text-xs text-[#52504b] hover:text-[#0a0a0a] hover:bg-white border border-transparent`}
               title={viewMode === 'tree' ? "All Branches (List View)" : "Tree View"}
             >
               {viewMode === 'tree' ? <List size={14} /> : <TreePine size={14} />}
@@ -94,10 +94,10 @@ export function BranchSidebar({
             {branches.length >= 2 && (
               <button
                 onClick={() => { setCompareMode(!compareMode); setCompareSelection([]); }}
-                className={`p-1.5 rounded-lg transition-all text-xs ${
+                className={`p-1.5 rounded transition-all text-xs ${
                   compareMode
-                    ? "bg-[#1a1a1a] text-[#a0a0a0] border border-[#2a2a2a]"
-                    : "text-[#555555] hover:text-white hover:bg-[#1f1f1f]"
+                    ? "bg-white text-[#52504b] border border-[#e8e8e8]"
+                    : "text-[#52504b] hover:text-[#0a0a0a] hover:bg-white"
                 }`}
                 title="Compare branches"
               >
@@ -106,7 +106,7 @@ export function BranchSidebar({
             )}
           </div>
         </div>
-        <p className="text-xs text-[#555555] mt-1.5">
+        <p className="text-xs text-[#52504b] mt-1.5">
           {compareMode
             ? `Select 2 branches to compare (${compareSelection.length}/2)`
             : `${branches.length} branch${branches.length !== 1 ? "es" : ""}`
@@ -116,7 +116,7 @@ export function BranchSidebar({
 
       {/* Compare Action Bar */}
       {compareMode && compareSelection.length === 2 && (
-        <div className="p-3 border-b border-[#2a2a2a] bg-[#111111]">
+        <div className="p-3 border-b border-[#e8e8e8] bg-white">
           <button
             onClick={handleCompare}
             className="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2"
@@ -141,7 +141,7 @@ export function BranchSidebar({
                     onClick={() => toggleCompareSelect(branch.id)}
                     className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                       isSelected
-                        ? "border-[#444444] bg-[#1a1a1a]"
+                        ? "border-[#e8e8e8] bg-white"
                         : "border-surface-600 hover:border-[#555555]"
                     }`}
                   >
@@ -152,17 +152,17 @@ export function BranchSidebar({
                 )}
                 <button
                   onClick={() => compareMode ? toggleCompareSelect(branch.id) : onBranchSelect(branch.id)}
-                  className={`flex-1 text-left px-3 py-2.5 rounded-xl transition-all duration-200 text-sm group
+                  className={`flex-1 text-left px-3 py-2.5 rounded transition-all duration-200 text-sm group
                     ${isActive && !compareMode
-                      ? "bg-[#1a1a1a] text-white border-l-2 border-l-[#ffffff] border-y-transparent border-r-transparent rounded-l-none"
+                      ? "bg-white text-[#0a0a0a] border-l-2 border-l-[#ffffff] border-y-transparent border-r-transparent rounded-l-none"
                       : isSelected
-                      ? "bg-[#1f1f1f] text-[#a0a0a0] border border-[#333333]"
-                      : "text-[#888888] hover:bg-[#141414] hover:text-[#e0e0e0] border border-transparent"
+                      ? "bg-white text-[#52504b] border border-[#e8e8e8]"
+                      : "text-[#52504b] hover:bg-white hover:text-[#e0e0e0] border border-transparent"
                     }`}
                 >
                   <div className="flex items-center gap-2">
                     {/* Branch icon */}
-                    <div className={`flex-shrink-0 ${isActive ? "text-[#a0a0a0]" : isSelected ? "text-[#a0a0a0]" : "text-[#444444]"}`}>
+                    <div className={`flex-shrink-0 ${isActive ? "text-[#52504b]" : isSelected ? "text-[#52504b]" : "text-[#52504b]"}`}>
                       <GitBranch size={14} />
                     </div>
 
@@ -173,7 +173,7 @@ export function BranchSidebar({
 
                     {/* Active indicator */}
                     {isActive && !compareMode && (
-                      <ChevronRight size={14} className="text-[#a0a0a0] flex-shrink-0" />
+                      <ChevronRight size={14} className="text-[#52504b] flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -182,7 +182,7 @@ export function BranchSidebar({
                   <button
                     onClick={(e) => handleExportPDF(e, branch.id)}
                     disabled={isExporting}
-                    className="flex-shrink-0 p-1.5 rounded-lg hover:bg-[#222222] text-[#555555] hover:text-white transition-colors"
+                    className="flex-shrink-0 p-1.5 rounded hover:bg-white text-[#52504b] hover:text-[#0a0a0a] transition-colors"
                     title="Export Branch PDF"
                   >
                     {isExporting ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
@@ -204,7 +204,7 @@ export function BranchSidebar({
                     onClick={() => toggleCompareSelect(branch.id)}
                     className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                       isSelected
-                        ? "border-[#444444] bg-[#1a1a1a]"
+                        ? "border-[#e8e8e8] bg-white"
                         : "border-surface-600 hover:border-[#555555]"
                     }`}
                   >
@@ -215,18 +215,18 @@ export function BranchSidebar({
                 )}
                 <button
                   onClick={() => compareMode ? toggleCompareSelect(branch.id) : onBranchSelect(branch.id)}
-                  className={`flex-1 text-left px-3 py-2.5 rounded-xl transition-all duration-200 text-sm group
+                  className={`flex-1 text-left px-3 py-2.5 rounded transition-all duration-200 text-sm group
                     ${isActive && !compareMode
-                      ? "bg-[#1a1a1a] text-white border-l-2 border-l-[#ffffff] border-y-transparent border-r-transparent rounded-l-none"
+                      ? "bg-white text-[#0a0a0a] border-l-2 border-l-[#ffffff] border-y-transparent border-r-transparent rounded-l-none"
                       : isSelected
-                      ? "bg-[#1f1f1f] text-[#a0a0a0] border border-[#333333]"
-                      : "text-[#888888] hover:bg-[#141414] hover:text-[#e0e0e0] border border-transparent"
+                      ? "bg-white text-[#52504b] border border-[#e8e8e8]"
+                      : "text-[#52504b] hover:bg-white hover:text-[#e0e0e0] border border-transparent"
                     }`}
                   style={{ paddingLeft: `${(compareMode ? 0 : branch.depth * 16) + 12}px` }}
                 >
                   <div className="flex items-center gap-2">
                     {/* Branch icon */}
-                    <div className={`flex-shrink-0 ${isActive ? "text-[#a0a0a0]" : isSelected ? "text-[#a0a0a0]" : "text-[#444444]"}`}>
+                    <div className={`flex-shrink-0 ${isActive ? "text-[#52504b]" : isSelected ? "text-[#52504b]" : "text-[#52504b]"}`}>
                       {isRoot ? (
                         <TreePine size={14} />
                       ) : (
@@ -241,14 +241,14 @@ export function BranchSidebar({
 
                     {/* Active indicator */}
                     {isActive && !compareMode && (
-                      <ChevronRight size={14} className="text-[#a0a0a0] flex-shrink-0" />
+                      <ChevronRight size={14} className="text-[#52504b] flex-shrink-0" />
                     )}
                   </div>
 
                   {/* Summary preview */}
                   {branch.summary && !compareMode && (
                     <p className={`text-xs mt-1 truncate
-                      ${isActive ? "text-[#a0a0a0]/60" : "text-[#444444]"}`}
+                      ${isActive ? "text-[#52504b]/60" : "text-[#52504b]"}`}
                        style={{ paddingLeft: `${22}px` }}
                     >
                       {branch.summary}
@@ -262,12 +262,12 @@ export function BranchSidebar({
                       {Array.from({ length: branch.depth }).map((_, i) => (
                         <div
                           key={i}
-                          className={`w-1 h-1 rounded-full
-                            ${isActive ? "bg-[#1a1a1a]" : "bg-[#222222]"}`}
+                          className={`w-1 h-1 rounded
+                            ${isActive ? "bg-white" : "bg-white"}`}
                         />
                       ))}
                       <span className={`text-[10px] ml-1
-                        ${isActive ? "text-[#a0a0a0]/50" : "text-[#444444]"}`}>
+                        ${isActive ? "text-[#52504b]/50" : "text-[#52504b]"}`}>
                         depth {branch.depth}
                       </span>
                     </div>
@@ -276,7 +276,7 @@ export function BranchSidebar({
                   {/* Origin preview */}
                   {branch.origin_preview && !compareMode && (
                     <p className={`text-[11px] mt-1 truncate italic
-                      ${isActive ? "text-[#a0a0a0]/60" : "text-[#555555]"}`}
+                      ${isActive ? "text-[#52504b]/60" : "text-[#52504b]"}`}
                        style={{ paddingLeft: `${22}px` }}
                     >
                       {branch.origin_preview}
@@ -288,7 +288,7 @@ export function BranchSidebar({
                   <button
                     onClick={(e) => handleExportPDF(e, branch.id)}
                     disabled={isExporting}
-                    className="flex-shrink-0 p-1.5 rounded-lg hover:bg-[#222222] text-[#555555] hover:text-white transition-colors"
+                    className="flex-shrink-0 p-1.5 rounded hover:bg-white text-[#52504b] hover:text-[#0a0a0a] transition-colors"
                     title="Export Branch PDF"
                   >
                     {isExporting ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
@@ -300,8 +300,8 @@ export function BranchSidebar({
         )}
 
         {branches.length === 0 && (
-          <div className="text-center py-8 text-[#444444]">
-            <GitBranch size={24} className="mx-auto mb-2 opacity-50" />
+          <div className="text-center py-8 text-[#52504b]">
+            <GitBranch size={24} className="mx-auto mb-2 " />
             <p className="text-xs">No branches yet</p>
           </div>
         )}
@@ -309,29 +309,29 @@ export function BranchSidebar({
 
       {/* Lineage Info Panel */}
       {activeBranch && graph && (
-        <div className="p-4 bg-[#1f1f1f]/50 border-t border-[#1e1e1e] space-y-4 animate-slide-up">
+        <div className="p-4 bg-white border-t border-[#e8e8e8] space-y-4 animate-slide-up">
           <div className="flex items-center gap-2 mb-2">
-            <Info size={14} className="text-[#a0a0a0]" />
-            <h4 className="text-[10px] font-bold text-[#888888] uppercase tracking-widest">
+            <Info size={14} className="text-[#52504b]" />
+            <h4 className="text-[10px] font-bold text-[#52504b] uppercase tracking-widest">
               Cognitive Lineage
             </h4>
           </div>
 
           {/* Lineage Path */}
           <div className="space-y-1.5">
-            <span className="text-[9px] text-[#555555] font-medium">Authoritative Path</span>
+            <span className="text-[9px] text-[#52504b] font-medium">Authoritative Path</span>
             <div className="flex flex-wrap items-center gap-1 text-[10px]">
               {graph.branch.lineage_path.map((name, i) => (
                 <div key={i} className="flex items-center gap-1">
                   <span className={`px-1.5 py-0.5 rounded border ${
                     i === graph.branch.lineage_path.length - 1
-                      ? "bg-[#1a1a1a] border-[#2a2a2a] text-[#a0a0a0]"
-                      : "bg-[#222222]/50 border-surface-600/50 text-[#555555]"
+                      ? "bg-white border-[#e8e8e8] text-[#52504b]"
+                      : "bg-white border-surface-600/50 text-[#52504b]"
                   }`}>
                     {name}
                   </span>
                   {i < graph.branch.lineage_path.length - 1 && (
-                    <ArrowRight size={8} className="text-[#444444]" />
+                    <ArrowRight size={8} className="text-[#52504b]" />
                   )}
                 </div>
               ))}
@@ -340,15 +340,15 @@ export function BranchSidebar({
 
           {/* Composition Stats */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#1a1a1a] p-2 rounded-lg border border-[#222222]">
+            <div className="bg-white p-2 rounded border border-[#e8e8e8]">
               <span className="block text-[8px] text-[#666666] font-bold uppercase">Inherited</span>
-              <span className="text-lg font-semibold text-[#888888] leading-none">
+              <span className="text-lg font-semibold text-[#52504b] leading-none">
                 {graph.metadata.inherited_count}
               </span>
             </div>
-            <div className="bg-[#1a1a1a] p-2 rounded-lg border border-[#2a2a2a]">
-              <span className="block text-[8px] text-[#a0a0a0]/70 font-bold uppercase">Local</span>
-              <span className="text-lg font-semibold text-[#a0a0a0] leading-none">
+            <div className="bg-white p-2 rounded border border-[#e8e8e8]">
+              <span className="block text-[8px] text-[#52504b]/70 font-bold uppercase">Local</span>
+              <span className="text-lg font-semibold text-[#52504b] leading-none">
                 {graph.metadata.local_count}
               </span>
             </div>
@@ -356,14 +356,14 @@ export function BranchSidebar({
 
           {/* Fork Origin Preview */}
           {graph.fork_origin && (
-            <div className="p-2 bg-[#1a1a1a] border border-[#e0e0e0] rounded-lg">
+            <div className="p-2 bg-white border border-[#e0e0e0] rounded">
               <div className="flex items-center gap-1.5 mb-1">
-                <Waypoints size={10} className="text-[#a0a0a0]" />
+                <Waypoints size={10} className="text-[#52504b]" />
                 <span className="text-[9px] font-bold text-[#e0e0e0] uppercase tracking-wider">
                   Fork Origin
                 </span>
               </div>
-              <p className="text-[10px] text-[#a0a0a0] line-clamp-2 italic">
+              <p className="text-[10px] text-[#52504b] line-clamp-2 italic">
                 {graph.nodes.find(n => n.id === graph.fork_origin?.node_id)?.content || "Divergence point"}
               </p>
               <div className="mt-1 flex items-center gap-1 text-[8px] text-[#666666]">

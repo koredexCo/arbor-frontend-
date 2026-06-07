@@ -161,14 +161,14 @@ function DivergenceBadge({ score, confidence }: { score: number; confidence: str
           </defs>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-black text-white">{pct}%</span>
+          <span className="text-2xl font-black text-[#0a0a0a]">{pct}%</span>
         </div>
       </div>
       <div className="text-center">
-        <span className={`text-xs font-bold uppercase tracking-wider bg-gradient-to-r ${color} bg-clip-text text-transparent`}>
+        <span className={`text-xs font-bold uppercase tracking-wider bg-white ${color} bg-clip-text text-transparent`}>
           {label}
         </span>
-        <p className="text-[10px] text-[#555555] mt-0.5">Confidence: {confidence}</p>
+        <p className="text-[10px] text-[#52504b] mt-0.5">Confidence: {confidence}</p>
       </div>
     </div>
   );
@@ -189,19 +189,19 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="bg-white border border-[#e8e8e8] rounded shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-5 hover:bg-[#1f1f1f]/30 transition-colors"
+        className="w-full flex items-center justify-between p-5 hover:bg-white transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#1a1a1a] flex items-center justify-center">
-            <Icon size={18} className="text-[#a0a0a0]" />
+          <div className="w-9 h-9 rounded bg-white flex items-center justify-center">
+            <Icon size={18} className="text-[#52504b]" />
           </div>
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h3>
+          <h3 className="text-sm font-bold text-[#0a0a0a] uppercase tracking-wider">{title}</h3>
           {badge}
         </div>
-        {open ? <ChevronUp size={16} className="text-[#555555]" /> : <ChevronDown size={16} className="text-[#555555]" />}
+        {open ? <ChevronUp size={16} className="text-[#52504b]" /> : <ChevronDown size={16} className="text-[#52504b]" />}
       </button>
       {open && <div className="p-5 pt-0 border-t border-[#1a1a1a]">{children}</div>}
     </div>
@@ -236,22 +236,22 @@ function ReasoningList({ items, icon: Icon, label, color }: {
           else if (signals.exploratory > 0.5) ambiguity = "exploratory";
         }
         
-        let statusClasses = "text-[#c0c0c0]";
-        let borderStyle = "border-l-2 border-[#222222]";
+        let statusClasses = "text-[#52504b]";
+        let borderStyle = "border-l-2 border-[#e8e8e8]";
         
         if (status === "superseded") {
-          statusClasses = "text-[#444444] line-through decoration-surface-500/50";
-          borderStyle = "border-l-2 border-[#1f1f1f]";
+          statusClasses = "text-[#52504b] line-through decoration-surface-500/50";
+          borderStyle = "border-l-2 border-[#e8e8e8]";
         } else if (status === "reinforced") {
-          statusClasses = "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]";
+          statusClasses = "text-[#0a0a0a] font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]";
         }
 
         if (status === "active" || status === "reinforced") {
           if (ambiguity === "tentative") {
-            borderStyle = "border-l-2 border-dashed border-[#2a2a2a]";
+            borderStyle = "border-l-2 border-dashed border-[#e8e8e8]";
             statusClasses += " italic";
           } else if (ambiguity === "exploratory") {
-            borderStyle = "border-l-2 border-dotted border-[#333333]";
+            borderStyle = "border-l-2 border-dotted border-[#e8e8e8]";
           }
         }
 
@@ -259,22 +259,22 @@ function ReasoningList({ items, icon: Icon, label, color }: {
           <div key={i} className={`pl-5 py-1.5 ${borderStyle} text-xs leading-relaxed ${statusClasses}`}>
             {value}
             {status === "reinforced" && (
-              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#555555] bg-[#1f1f1f] px-1.5 py-0.5 rounded-full">
+              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#52504b] bg-white px-1.5 py-0.5 rounded">
                 Reinforced
               </span>
             )}
             {status === "superseded" && (
-              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#444444] bg-[#111111] px-1.5 py-0.5 rounded-full border border-[#1f1f1f]">
+              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#52504b] bg-white px-1.5 py-0.5 rounded border border-[#e8e8e8]">
                 Superseded
               </span>
             )}
             {status !== "superseded" && ambiguity === "tentative" && (
-              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#555555] bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#52504b] bg-amber-500/10 px-1.5 py-0.5 rounded">
                 Tentative
               </span>
             )}
             {status !== "superseded" && ambiguity === "exploratory" && (
-              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#a0a0a0]/70 bg-[#1f1f1f] px-1.5 py-0.5 rounded-full">
+              <span className="ml-2 text-[8px] font-black uppercase tracking-wider text-[#52504b]/70 bg-white px-1.5 py-0.5 rounded">
                 Exploratory
               </span>
             )}
@@ -348,14 +348,14 @@ export function CompareBranches() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#666666] to-violet-500 flex items-center justify-center shadow-2xl shadow-none animate-pulse">
-            <GitCompareArrows size={28} className="text-white" />
+          <div className="w-16 h-16 rounded bg-white  to-violet-500 flex items-center justify-center shadow-md shadow-none ">
+            <GitCompareArrows size={28} className="text-[#0a0a0a]" />
           </div>
           <div className="flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin text-[#a0a0a0]" />
-            <p className="text-sm text-[#888888] font-medium">Analyzing branches...</p>
+            <Loader2 size={16} className="animate-spin text-[#52504b]" />
+            <p className="text-sm text-[#52504b] font-medium">Analyzing branches...</p>
           </div>
         </div>
       </div>
@@ -364,11 +364,11 @@ export function CompareBranches() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="glass-card p-8 max-w-md text-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-8 max-w-md text-center">
           <AlertTriangle size={40} className="mx-auto text-amber-400 mb-4" />
-          <h2 className="text-lg font-bold text-white mb-2">Comparison Failed</h2>
-          <p className="text-sm text-[#888888] mb-6">{error}</p>
+          <h2 className="text-lg font-bold text-[#0a0a0a] mb-2">Comparison Failed</h2>
+          <p className="text-sm text-[#52504b] mb-6">{error}</p>
           <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
         </div>
       </div>
@@ -380,22 +380,22 @@ export function CompareBranches() {
   const { summary, reasoning, code_diffs, memory, divergence, timeline, evolution_timeline, evolution, replay, ai_summary } = result;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <nav className="bg-[#111111]/80 backdrop-blur-xl border-b border-[#1e1e1e] sticky top-0 z-40">
+    <div className="min-h-screen bg-white">
+      <nav className="bg-white backdrop- border-b border-[#e8e8e8] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => convId ? navigate(`/chat/${convId}`) : navigate(-1)}
-              className="p-2 rounded-xl bg-[#1f1f1f] text-[#888888] hover:text-white hover:bg-[#222222] transition-all"
+              className="p-2 rounded bg-white text-[#52504b] hover:text-[#0a0a0a] hover:bg-white transition-all"
             >
               <ArrowLeft size={16} />
             </button>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#666666] to-violet-500 flex items-center justify-center shadow-lg shadow-none">
-              <GitCompareArrows size={16} className="text-white" />
+            <div className="w-8 h-8 rounded bg-white  to-violet-500 flex items-center justify-center shadow-lg shadow-none">
+              <GitCompareArrows size={16} className="text-[#0a0a0a]" />
             </div>
             <div>
-              <span className="text-base font-bold text-white">Branch Compare</span>
-              <p className="text-[10px] text-[#555555] uppercase tracking-widest">
+              <span className="text-base font-bold text-[#0a0a0a]">Branch Compare</span>
+              <p className="text-[10px] text-[#52504b] uppercase tracking-widest">
                 {summary.branch_a.branch_name} vs {summary.branch_b.branch_name}
               </p>
             </div>
@@ -406,16 +406,16 @@ export function CompareBranches() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
 
         {showFatiguePrompt && !focusedMode && (
-          <div className="p-4 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-between">
+          <div className="p-4 rounded bg-white border border-[#e8e8e8] flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Brain className="text-[#a0a0a0]" size={20} />
+              <Brain className="text-[#52504b]" size={20} />
               <p className="text-sm text-[#e0e0e0]">This comparison appears cognitively dense. Switch to Focused Mode?</p>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowFatiguePrompt(false)} className="text-xs text-[#888888] hover:text-white transition-colors">Dismiss</button>
+              <button onClick={() => setShowFatiguePrompt(false)} className="text-xs text-[#52504b] hover:text-[#0a0a0a] transition-colors">Dismiss</button>
               <button 
                 onClick={() => { setFocusedMode(true); setShowFatiguePrompt(false); setCognitiveStateOpen(false); }} 
-                className="px-4 py-1.5 rounded-lg bg-white text-white text-xs font-bold hover:bg-white transition-colors"
+                className="px-4 py-1.5 rounded bg-white text-[#0a0a0a] text-xs font-bold hover:bg-white transition-colors"
               >
                 Enable Focused Mode
               </button>
@@ -424,9 +424,9 @@ export function CompareBranches() {
         )}
 
         {result && result.evolution?.executive_summary && (
-          <div className="p-6 rounded-2xl bg-[#111111]/80 border border-[#222222] shadow-xl backdrop-blur-xl">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-[#a0a0a0] mb-2">Executive Summary</h2>
-            <p className="text-base font-medium text-white leading-relaxed">
+          <div className="p-6 rounded bg-white border border-[#e8e8e8] shadow-sm backdrop-">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-[#52504b] mb-2">Executive Summary</h2>
+            <p className="text-base font-medium text-[#0a0a0a] leading-relaxed">
               {result.evolution.executive_summary}
             </p>
           </div>
@@ -439,7 +439,7 @@ export function CompareBranches() {
             <BranchCard summary={summary.branch_a} label="A" color="brand" isBranchA={true} />
             <div className="flex flex-col items-center justify-center py-4">
               <DivergenceBadge score={divergence.score} confidence={divergence.confidence} />
-              <p className="text-[10px] text-[#444444] mt-3 text-center">
+              <p className="text-[10px] text-[#52504b] mt-3 text-center">
                 Based on {divergence.sample_size} embedding comparisons
               </p>
             </div>
@@ -449,8 +449,8 @@ export function CompareBranches() {
 
         {ai_summary && (
           <Section title="AI Comparison Summary" icon={Sparkles}>
-            <div className="mt-4 p-5 rounded-xl bg-gradient-to-br from-[#666666]/5 to-violet-500/5 border border-[#2a2a2a]">
-              <div className="text-sm text-[#c0c0c0] leading-relaxed whitespace-pre-wrap">
+            <div className="mt-4 p-5 rounded bg-white /5 to-violet-500/5 border border-[#e8e8e8]">
+              <div className="text-sm text-[#52504b] leading-relaxed whitespace-pre-wrap">
                 {ai_summary}
               </div>
             </div>
@@ -462,18 +462,18 @@ export function CompareBranches() {
             <div className="flex items-center gap-2 ml-2">
               <span className="badge-brand">Temporal State</span>
               {evolution.confidence !== undefined && (
-                <span className={`text-[10px] font-mono ${evolution.confidence > 0.7 ? "text-white" : "text-[#888888]"}`}>
+                <span className={`text-[10px] font-mono ${evolution.confidence > 0.7 ? "text-[#0a0a0a]" : "text-[#52504b]"}`}>
                   Conf: {evolution.confidence.toFixed(2)}
                 </span>
               )}
             </div>
           }>
             <div className="mb-4">
-              <p className="text-[10px] text-[#888888] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
-              <p className="text-xs text-[#555555] mb-4">This section highlights the most significant shifts in logic, tradeoffs, and architectural decisions that drove the branches apart over time.</p>
+              <p className="text-[10px] text-[#52504b] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
+              <p className="text-xs text-[#52504b] mb-4">This section highlights the most significant shifts in logic, tradeoffs, and architectural decisions that drove the branches apart over time.</p>
             </div>
             
-            <div className="mt-4 p-5 rounded-xl bg-gradient-to-br from-[#666666]/5 to-violet-500/5 border border-[#2a2a2a]">
+            <div className="mt-4 p-5 rounded bg-white /5 to-violet-500/5 border border-[#e8e8e8]">
               <p className="text-sm text-[#e0e0e0] leading-relaxed">
                 {evolution.narrative}
               </p>
@@ -483,7 +483,7 @@ export function CompareBranches() {
               <div className="mt-4">
                 <button 
                   onClick={() => setInterpretationsOpen(!interpretationsOpen)}
-                  className="text-xs font-bold text-[#888888] hover:text-white transition-colors flex items-center gap-2"
+                  className="text-xs font-bold text-[#52504b] hover:text-[#0a0a0a] transition-colors flex items-center gap-2"
                 >
                   <Layers size={14} />
                   {interpretationsOpen ? "Hide Interpretations" : "Compare Interpretations"}
@@ -491,18 +491,18 @@ export function CompareBranches() {
                 
                 {interpretationsOpen && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl border border-[#1e1e1e] bg-[#1f1f1f]/30">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-white mb-2 block">
+                    <div className="p-4 rounded border border-[#e8e8e8] bg-white">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-[#0a0a0a] mb-2 block">
                         {evolution.interpretations.primary.label} (Conf: {evolution.interpretations.primary.confidence})
                       </span>
-                      <p className="text-xs text-[#c0c0c0] leading-relaxed">{evolution.interpretations.primary.text}</p>
+                      <p className="text-xs text-[#52504b] leading-relaxed">{evolution.interpretations.primary.text}</p>
                     </div>
                     {evolution.interpretations.alternatives.map((alt, i) => (
-                      <div key={i} className="p-4 rounded-xl border border-[#1e1e1e] bg-[#1f1f1f]/30">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[#888888] mb-2 block">
+                      <div key={i} className="p-4 rounded border border-[#e8e8e8] bg-white">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#52504b] mb-2 block">
                           {alt.label} (Conf: {alt.confidence})
                         </span>
-                        <p className="text-xs text-[#c0c0c0] leading-relaxed">{alt.text}</p>
+                        <p className="text-xs text-[#52504b] leading-relaxed">{alt.text}</p>
                       </div>
                     ))}
                   </div>
@@ -512,33 +512,33 @@ export function CompareBranches() {
             
             {!focusedMode && evolution.ranked_deltas.length > 0 && (
               <div className="mt-6 space-y-4">
-                <h4 className="text-[10px] font-black text-[#888888] uppercase tracking-widest">Ranked Divergence Drivers</h4>
+                <h4 className="text-[10px] font-black text-[#52504b] uppercase tracking-widest">Ranked Divergence Drivers</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {evolution.ranked_deltas.map((delta, i) => (
-                    <div key={i} className="p-4 rounded-xl border border-[#1e1e1e] bg-[#111111]/50">
+                    <div key={i} className="p-4 rounded border border-[#e8e8e8] bg-white">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-white capitalize">{delta.category.replace("_", " ")}</span>
+                        <span className="text-xs font-bold text-[#0a0a0a] capitalize">{delta.category.replace("_", " ")}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-[#1f1f1f] rounded-full overflow-hidden">
+                          <div className="w-16 h-1.5 bg-white rounded overflow-hidden">
                             <div 
-                              className="h-full bg-gradient-to-r from-[#666666] to-violet-500" 
+                              className="h-full bg-white  to-violet-500" 
                               style={{ width: `${Math.min(100, delta.importance * 100)}%` }} 
                             />
                           </div>
-                          <span className="text-[10px] text-[#555555]">{delta.importance.toFixed(2)}</span>
+                          <span className="text-[10px] text-[#52504b]">{delta.importance.toFixed(2)}</span>
                         </div>
                       </div>
                       <div className="space-y-3">
                         {delta.only_in_a.length > 0 && (
                           <div>
-                            <span className="text-[10px] font-black text-[#a0a0a0] uppercase">Only in A</span>
-                            <p className="text-xs text-[#c0c0c0] mt-1 line-clamp-2 leading-relaxed">{delta.only_in_a[0]}</p>
+                            <span className="text-[10px] font-black text-[#52504b] uppercase">Only in A</span>
+                            <p className="text-xs text-[#52504b] mt-1 line-clamp-2 leading-relaxed">{delta.only_in_a[0]}</p>
                           </div>
                         )}
                         {delta.only_in_b.length > 0 && (
                           <div>
-                            <span className="text-[10px] font-black text-[#a0a0a0] uppercase">Only in B</span>
-                            <p className="text-xs text-[#c0c0c0] mt-1 line-clamp-2 leading-relaxed">{delta.only_in_b[0]}</p>
+                            <span className="text-[10px] font-black text-[#52504b] uppercase">Only in B</span>
+                            <p className="text-xs text-[#52504b] mt-1 line-clamp-2 leading-relaxed">{delta.only_in_b[0]}</p>
                           </div>
                         )}
                       </div>
@@ -563,20 +563,20 @@ export function CompareBranches() {
           </>
         }>
           <div className="mb-4">
-            <p className="text-[10px] text-[#888888] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
-            <p className="text-xs text-[#555555] mb-4">A complete mapping of active, tentative, and superseded assumptions within each branch's cognitive state.</p>
+            <p className="text-[10px] text-[#52504b] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
+            <p className="text-xs text-[#52504b] mb-4">A complete mapping of active, tentative, and superseded assumptions within each branch's cognitive state.</p>
           </div>
           
           <button 
             onClick={toggleCognitiveState}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1f1f1f] hover:bg-[#222222] transition-colors text-xs font-bold text-[#c0c0c0] border border-[#222222]"
+            className="w-full flex items-center justify-between p-3 rounded bg-white hover:bg-white transition-colors text-xs font-bold text-[#52504b] border border-[#e8e8e8]"
           >
             {cognitiveStateOpen ? "Hide Cognitive Metadata" : "Inspect Full Cognitive State"}
             {cognitiveStateOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
           {cognitiveStateOpen && (
-            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 rounded-xl border border-[#1e1e1e] bg-[#111111]/30">
+            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 rounded border border-[#e8e8e8] bg-white">
               <ReasoningColumn reasoning={reasoning.branch_a} branchName={summary.branch_a.branch_name} color="brand" />
               <div className="lg:border-l lg:border-[#1a1a1a] lg:pl-6">
                 <ReasoningColumn reasoning={reasoning.branch_b} branchName={summary.branch_b.branch_name} color="violet" />
@@ -594,20 +594,20 @@ export function CompareBranches() {
           }>
             <div className="mt-4 space-y-4">
               {code_diffs.map((diff, i) => (
-                <div key={i} className="rounded-xl border border-[#1e1e1e] overflow-hidden">
-                  <div className="px-4 py-2 bg-[#1f1f1f]/50 flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-[#c0c0c0]">{diff.language}</span>
+                <div key={i} className="rounded border border-[#e8e8e8] overflow-hidden">
+                  <div className="px-4 py-2 bg-white flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-[#52504b]">{diff.language}</span>
                     <div className="flex items-center gap-3 text-[10px] font-bold">
-                      <span className="text-white">+{diff.lines_added}</span>
+                      <span className="text-[#0a0a0a]">+{diff.lines_added}</span>
                       <span className="text-red-400">-{diff.lines_removed}</span>
                     </div>
                   </div>
-                  <pre className="p-4 text-xs font-mono text-[#c0c0c0] overflow-x-auto bg-[#0a0a0a]/50 leading-relaxed">
+                  <pre className="p-4 text-xs font-mono text-[#52504b] overflow-x-auto bg-white leading-relaxed">
                     {diff.diff.split("\n").map((line, j) => {
-                      let cls = "text-[#555555]";
-                      if (line.startsWith("+") && !line.startsWith("+++")) cls = "text-white bg-white/5";
+                      let cls = "text-[#52504b]";
+                      if (line.startsWith("+") && !line.startsWith("+++")) cls = "text-[#0a0a0a] bg-white/5";
                       else if (line.startsWith("-") && !line.startsWith("---")) cls = "text-red-400 bg-red-500/5";
-                      else if (line.startsWith("@@")) cls = "text-white";
+                      else if (line.startsWith("@@")) cls = "text-[#0a0a0a]";
                       return <div key={j} className={`px-2 ${cls}`}>{line}</div>;
                     })}
                   </pre>
@@ -622,20 +622,20 @@ export function CompareBranches() {
             ============================================================ */}
         <Section title="Memory Retrieval" icon={Database}>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard label="Shared Memories" value={memory.shared_memories} sub="Retrieved by both branches" color="text-[#a0a0a0]" />
-            <MetricCard label="Unique to A" value={memory.unique_to_a} sub={`${summary.branch_a.branch_name} only`} color="text-white" />
-            <MetricCard label="Unique to B" value={memory.unique_to_b} sub={`${summary.branch_b.branch_name} only`} color="text-[#a0a0a0]" />
+            <MetricCard label="Shared Memories" value={memory.shared_memories} sub="Retrieved by both branches" color="text-[#52504b]" />
+            <MetricCard label="Unique to A" value={memory.unique_to_a} sub={`${summary.branch_a.branch_name} only`} color="text-[#0a0a0a]" />
+            <MetricCard label="Unique to B" value={memory.unique_to_b} sub={`${summary.branch_b.branch_name} only`} color="text-[#52504b]" />
           </div>
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-[#1f1f1f]/30 border border-[#1a1a1a]">
-              <p className="text-[10px] font-black text-[#a0a0a0] uppercase tracking-widest mb-2">Branch A Context</p>
+            <div className="p-4 rounded bg-white border border-[#1a1a1a]">
+              <p className="text-[10px] font-black text-[#52504b] uppercase tracking-widest mb-2">Branch A Context</p>
               <div className="flex items-center gap-4">
                 <StatPill label="Messages" value={memory.branch_a.message_count} />
                 <StatPill label="Semantic" value={memory.branch_a.semantic_count} />
               </div>
             </div>
-            <div className="p-4 rounded-xl bg-[#1f1f1f]/30 border border-[#1a1a1a]">
-              <p className="text-[10px] font-black text-[#a0a0a0] uppercase tracking-widest mb-2">Branch B Context</p>
+            <div className="p-4 rounded bg-white border border-[#1a1a1a]">
+              <p className="text-[10px] font-black text-[#52504b] uppercase tracking-widest mb-2">Branch B Context</p>
               <div className="flex items-center gap-4">
                 <StatPill label="Messages" value={memory.branch_b.message_count} />
                 <StatPill label="Semantic" value={memory.branch_b.semantic_count} />
@@ -649,8 +649,8 @@ export function CompareBranches() {
             ============================================================ */}
         <Section title="Replay Timeline" icon={Clock} defaultOpen={false}>
           <div className="mb-4">
-            <p className="text-[10px] text-[#888888] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
-            <p className="text-xs text-[#555555] mb-4">Navigable history of how the conversation evolved. Timeline markers isolate significant cognitive pivots (architecture, tradeoffs) while suppressing minor conversational noise.</p>
+            <p className="text-[10px] text-[#52504b] uppercase tracking-widest font-bold mb-1">Strategic Summary</p>
+            <p className="text-xs text-[#52504b] mb-4">Navigable history of how the conversation evolved. Timeline markers isolate significant cognitive pivots (architecture, tradeoffs) while suppressing minor conversational noise.</p>
           </div>
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <TimelineColumn entries={timeline.branch_a} evoTimeline={evolution_timeline.branch_a} label={summary.branch_a.branch_name} color="brand" replay={replay.branch_a} />
@@ -669,43 +669,43 @@ export function CompareBranches() {
 
 function BranchCard({ summary, label, color, isBranchA: _isBranchA }: { summary: BranchSummary; label: string; color: string; isBranchA?: boolean }) {
   const colorMap: Record<string, string> = {
-    brand: "from-[#666666]/15 to-white/5 border-[#2a2a2a]",
-    violet: "from-violet-500/15 to-violet-600/5 border-[#333333]",
+    brand: "/15 to-white/5 border-[#e8e8e8]",
+    violet: "from-violet-500/15 to-violet-600/5 border-[#e8e8e8]",
   };
   const textMap: Record<string, string> = {
-    brand: "text-[#a0a0a0]",
-    violet: "text-[#a0a0a0]",
+    brand: "text-[#52504b]",
+    violet: "text-[#52504b]",
   };
   return (
-    <div className={`p-5 rounded-xl bg-gradient-to-br ${colorMap[color]} border`}>
+    <div className={`p-5 rounded bg-white ${colorMap[color]} border`}>
       <div className="flex items-center gap-2 mb-4">
-        <div className={`w-7 h-7 rounded-lg bg-[#1f1f1f] flex items-center justify-center text-xs font-black ${textMap[color]}`}>
+        <div className={`w-7 h-7 rounded bg-white flex items-center justify-center text-xs font-black ${textMap[color]}`}>
           {label}
         </div>
-        <h4 className="text-sm font-bold text-white truncate">{summary.branch_name}</h4>
+        <h4 className="text-sm font-bold text-[#0a0a0a] truncate">{summary.branch_name}</h4>
       </div>
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div>
-          <p className="text-[#555555]">Messages</p>
-          <p className="font-bold text-white">{summary.message_count}</p>
+          <p className="text-[#52504b]">Messages</p>
+          <p className="font-bold text-[#0a0a0a]">{summary.message_count}</p>
         </div>
         <div>
-          <p className="text-[#555555]">Depth</p>
-          <p className="font-bold text-white">{summary.depth}</p>
+          <p className="text-[#52504b]">Depth</p>
+          <p className="font-bold text-[#0a0a0a]">{summary.depth}</p>
         </div>
         <div>
-          <p className="text-[#555555]">Code Blocks</p>
-          <p className="font-bold text-white">{summary.code_block_count}</p>
+          <p className="text-[#52504b]">Code Blocks</p>
+          <p className="font-bold text-[#0a0a0a]">{summary.code_block_count}</p>
         </div>
         <div>
-          <p className="text-[#555555]">Est. Tokens</p>
-          <p className="font-bold text-white">{summary.estimated_tokens.toLocaleString()}</p>
+          <p className="text-[#52504b]">Est. Tokens</p>
+          <p className="font-bold text-[#0a0a0a]">{summary.estimated_tokens.toLocaleString()}</p>
         </div>
       </div>
       {summary.languages_used.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {summary.languages_used.map(lang => (
-            <span key={lang} className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#1f1f1f] text-[#888888] border border-[#222222]">
+            <span key={lang} className="px-2 py-0.5 text-[10px] font-bold rounded bg-white text-[#52504b] border border-[#e8e8e8]">
               {lang}
             </span>
           ))}
@@ -717,10 +717,10 @@ function BranchCard({ summary, label, color, isBranchA: _isBranchA }: { summary:
 
 function MetricCard({ label, value, sub, color }: { label: string; value: number; sub: string; color: string }) {
   return (
-    <div className="p-4 rounded-xl bg-[#1f1f1f]/30 border border-[#1a1a1a] text-center">
+    <div className="p-4 rounded bg-white border border-[#1a1a1a] text-center">
       <p className={`text-2xl font-black ${color}`}>{value}</p>
-      <p className="text-xs font-bold text-white mt-1">{label}</p>
-      <p className="text-[10px] text-[#555555] mt-0.5">{sub}</p>
+      <p className="text-xs font-bold text-[#0a0a0a] mt-1">{label}</p>
+      <p className="text-[10px] text-[#52504b] mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -728,8 +728,8 @@ function MetricCard({ label, value, sub, color }: { label: string; value: number
 function StatPill({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs font-bold text-white">{value}</span>
-      <span className="text-[10px] text-[#555555]">{label}</span>
+      <span className="text-xs font-bold text-[#0a0a0a]">{value}</span>
+      <span className="text-[10px] text-[#52504b]">{label}</span>
     </div>
   );
 }
@@ -741,7 +741,7 @@ function TimelineColumn({ entries, evoTimeline, label, color, replay }: {
   color: string;
   replay: { has_snapshot: boolean; model: string | null; system_prompt_preview: string | null };
 }) {
-  const textColor = color === "brand" ? "text-[#a0a0a0]" : "text-[#a0a0a0]";
+  const textColor = color === "brand" ? "text-[#52504b]" : "text-[#52504b]";
   const dotColor = color === "brand" ? "bg-white" : "bg-violet-500";
 
   return (
@@ -753,7 +753,7 @@ function TimelineColumn({ entries, evoTimeline, label, color, replay }: {
         )}
       </div>
       {replay.model && (
-        <p className="text-[10px] text-[#555555] mb-3">Model: <span className="text-[#c0c0c0] font-mono">{replay.model}</span></p>
+        <p className="text-[10px] text-[#52504b] mb-3">Model: <span className="text-[#52504b] font-mono">{replay.model}</span></p>
       )}
       <div className="space-y-0">
         {entries.slice(0, 20).map((entry, i) => {
@@ -763,31 +763,31 @@ function TimelineColumn({ entries, evoTimeline, label, color, replay }: {
           return (
             <div key={i} className="flex gap-3 group">
               <div className="flex flex-col items-center">
-                <div className={`w-2 h-2 rounded-full ${entry.role === "assistant" ? dotColor : "bg-surface-600"} mt-2 flex-shrink-0`} />
-                {i < entries.length - 1 && <div className="w-px flex-1 bg-[#222222]/50" />}
+                <div className={`w-2 h-2 rounded ${entry.role === "assistant" ? dotColor : "bg-surface-600"} mt-2 flex-shrink-0`} />
+                {i < entries.length - 1 && <div className="w-px flex-1 bg-white" />}
               </div>
               <div className="pb-4 flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${entry.role === "assistant" ? textColor : "text-[#555555]"}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${entry.role === "assistant" ? textColor : "text-[#52504b]"}`}>
                     {entry.role}
                   </span>
-                  <span className="text-[9px] text-[#444444] font-mono">
+                  <span className="text-[9px] text-[#52504b] font-mono">
                     {new Date(entry.time).toLocaleTimeString()}
                   </span>
                 </div>
-                <p className="text-xs text-[#888888] line-clamp-2 leading-relaxed">{entry.content_preview}</p>
+                <p className="text-xs text-[#52504b] line-clamp-2 leading-relaxed">{entry.content_preview}</p>
                 
                 {/* Evolution marker for assistant messages */}
                 {entry.role === "assistant" && evo && (
-                  <div className="mt-2 p-2.5 rounded-lg bg-[#1f1f1f]/50 border border-[#1e1e1e]">
+                  <div className="mt-2 p-2.5 rounded bg-white border border-[#e8e8e8]">
                     <div className="flex items-center gap-2 mb-1">
                       <Brain size={12} className={textColor} />
-                      <span className="text-[9px] font-bold text-[#c0c0c0] uppercase tracking-widest">Reasoning Turn {evo.turn}</span>
+                      <span className="text-[9px] font-bold text-[#52504b] uppercase tracking-widest">Reasoning Turn {evo.turn}</span>
                     </div>
-                    <p className="text-xs text-[#888888] line-clamp-1 italic">"{evo.summary}"</p>
+                    <p className="text-xs text-[#52504b] line-clamp-1 italic">"{evo.summary}"</p>
                     <div className="mt-1.5 flex gap-1.5">
                       {evo.dominant_categories.map(cat => (
-                        <span key={cat} className="text-[8px] uppercase font-bold text-[#555555] bg-[#111111] px-1.5 py-0.5 rounded">
+                        <span key={cat} className="text-[8px] uppercase font-bold text-[#52504b] bg-white px-1.5 py-0.5 rounded">
                           {cat.replace("_", " ")}
                         </span>
                       ))}
@@ -798,7 +798,7 @@ function TimelineColumn({ entries, evoTimeline, label, color, replay }: {
             </div>
           );
         })}
-        {entries.length === 0 && <p className="text-xs text-[#555555] italic">No messages in this branch.</p>}
+        {entries.length === 0 && <p className="text-xs text-[#52504b] italic">No messages in this branch.</p>}
       </div>
     </div>
   );
@@ -809,11 +809,11 @@ function ReasoningColumn({ reasoning, branchName, color }: {
   branchName: string;
   color: string;
 }) {
-  const textColor = color === "brand" ? "text-[#a0a0a0]" : "text-[#a0a0a0]";
+  const textColor = color === "brand" ? "text-[#52504b]" : "text-[#52504b]";
 
   const confColor = reasoning.confidence === "high"
-    ? "text-white"
-    : reasoning.confidence === "medium" ? "text-[#888888]" : "text-red-400";
+    ? "text-[#0a0a0a]"
+    : reasoning.confidence === "medium" ? "text-[#52504b]" : "text-red-400";
 
   return (
     <div className="space-y-5">
@@ -826,19 +826,19 @@ function ReasoningColumn({ reasoning, branchName, color }: {
             {reasoning.confidence} confidence
           </span>
           {reasoning.snapshot_count && reasoning.snapshot_count > 0 && (
-            <span className="text-[10px] text-[#555555]">
+            <span className="text-[10px] text-[#52504b]">
               ({reasoning.snapshot_count} turns)
             </span>
           )}
         </div>
       </div>
 
-      <ReasoningList items={reasoning.decisions || []} icon={Target} label="Decisions" color="text-white" />
-      <ReasoningList items={reasoning.assumptions || []} icon={Lightbulb} label="Assumptions" color="text-[#888888]" />
+      <ReasoningList items={reasoning.decisions || []} icon={Target} label="Decisions" color="text-[#0a0a0a]" />
+      <ReasoningList items={reasoning.assumptions || []} icon={Lightbulb} label="Assumptions" color="text-[#52504b]" />
       <ReasoningList items={reasoning.priorities || []} icon={Activity} label="Priorities" color="text-gray-300" />
-      <ReasoningList items={reasoning.goals || []} icon={Crosshair} label="Goals" color="text-white" />
+      <ReasoningList items={reasoning.goals || []} icon={Crosshair} label="Goals" color="text-[#0a0a0a]" />
       <ReasoningList items={reasoning.constraints || []} icon={Shield} label="Constraints" color="text-red-400" />
-      <ReasoningList items={reasoning.tradeoffs || []} icon={Scale} label="Trade-offs" color="text-[#a0a0a0]" />
+      <ReasoningList items={reasoning.tradeoffs || []} icon={Scale} label="Trade-offs" color="text-[#52504b]" />
       <ReasoningList items={reasoning.architecture_patterns || []} icon={Cpu} label="Architecture" color="text-teal-400" />
       <ReasoningList items={reasoning.code_summary || []} icon={Wrench} label="Code Summary" color="text-indigo-400" />
     </div>

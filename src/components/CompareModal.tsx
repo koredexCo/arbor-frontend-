@@ -57,19 +57,19 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="glass-card w-full max-w-4xl max-h-[90vh] flex flex-col animate-scale-up shadow-2xl border-[#2a2a2a]">
-        <div className="flex justify-between items-center p-6 border-b border-[#1e1e1e]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-white backdrop- animate-fade-in">
+      <div className="bg-white border border-[#e8e8e8] rounded shadow-sm w-full max-w-4xl max-h-[90vh] flex flex-col animate-scale-up shadow-md border-[#e8e8e8]">
+        <div className="flex justify-between items-center p-6 border-b border-[#e8e8e8]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#1a1a1a] text-[#a0a0a0] rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-white text-[#52504b] rounded flex items-center justify-center">
               <Sparkles size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Compare Models</h2>
-              <p className="text-xs text-[#888888]">Run a prompt against multiple models in parallel.</p>
+              <h2 className="text-xl font-bold text-[#0a0a0a]">Compare Models</h2>
+              <p className="text-xs text-[#52504b]">Run a prompt against multiple models in parallel.</p>
             </div>
           </div>
-          <button onClick={handleClose} className="text-[#555555] hover:text-white transition-colors">
+          <button onClick={handleClose} className="text-[#52504b] hover:text-[#0a0a0a] transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -78,7 +78,7 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
           {!results ? (
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-black text-[#555555] uppercase tracking-widest mb-2">
+                <label className="block text-xs font-black text-[#52504b] uppercase tracking-widest mb-2">
                   Prompt
                 </label>
                 <textarea
@@ -90,7 +90,7 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
               </div>
 
               <div>
-                <label className="block text-xs font-black text-[#555555] uppercase tracking-widest mb-2">
+                <label className="block text-xs font-black text-[#52504b] uppercase tracking-widest mb-2">
                   Select Models (2-4)
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -100,15 +100,15 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
                       <button
                         key={model.id}
                         onClick={() => toggleModel(model.id)}
-                        className={`p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
-                          isSelected ? "border-[#444444] bg-[#1a1a1a]" : "border-[#222222] hover:border-[#333333] bg-[#111111]"
+                        className={`p-4 rounded border-2 text-left transition-all flex items-center justify-between ${
+                          isSelected ? "border-[#e8e8e8] bg-white" : "border-[#e8e8e8] hover:border-[#e8e8e8] bg-white"
                         }`}
                       >
                         <div>
-                          <div className="font-bold text-white text-sm">{model.name}</div>
-                          <div className="text-xs text-[#555555]">{model.provider}</div>
+                          <div className="font-bold text-[#0a0a0a] text-sm">{model.name}</div>
+                          <div className="text-xs text-[#52504b]">{model.provider}</div>
                         </div>
-                        {isSelected && <Check size={18} className="text-[#a0a0a0]" />}
+                        {isSelected && <Check size={18} className="text-[#52504b]" />}
                       </button>
                     );
                   })}
@@ -116,7 +116,7 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
               </div>
 
               {error && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                <div className="p-4 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
                   {error}
                 </div>
               )}
@@ -141,29 +141,29 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
             </div>
           ) : (
             <div className="space-y-6 h-full flex flex-col">
-              <div className="p-4 rounded-xl bg-[#1f1f1f]/50 border border-[#1e1e1e]">
-                <span className="text-xs font-black text-[#555555] uppercase tracking-widest mb-1 block">Prompt</span>
-                <p className="text-sm text-white">{prompt}</p>
+              <div className="p-4 rounded bg-white border border-[#e8e8e8]">
+                <span className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-1 block">Prompt</span>
+                <p className="text-sm text-[#0a0a0a]">{prompt}</p>
               </div>
               
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
                 {results.map((result, idx) => (
-                  <div key={idx} className="glass-card flex flex-col overflow-hidden relative">
-                    <div className="p-3 border-b border-[#1e1e1e] bg-[#111111] flex justify-between items-center">
+                  <div key={idx} className="bg-white border border-[#e8e8e8] rounded shadow-sm flex flex-col overflow-hidden relative">
+                    <div className="p-3 border-b border-[#e8e8e8] bg-white flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-white" />
-                        <span className="text-sm font-bold text-white font-mono">{result.model}</span>
+                        <div className="w-2 h-2 rounded bg-white" />
+                        <span className="text-sm font-bold text-[#0a0a0a] font-mono">{result.model}</span>
                       </div>
                       {result.error ? (
                         <span className="text-[10px] uppercase font-bold text-red-400">Failed</span>
                       ) : (
-                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-white">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-[#0a0a0a]">
                           <Check size={12} /> Success
                         </div>
                       )}
                     </div>
                     
-                    <div className="p-4 flex-1 overflow-y-auto text-sm text-[#c0c0c0] leading-relaxed custom-scrollbar">
+                    <div className="p-4 flex-1 overflow-y-auto text-sm text-[#52504b] leading-relaxed custom-scrollbar">
                       {result.error ? (
                         <div className="text-red-400">{result.error}</div>
                       ) : (
@@ -172,9 +172,9 @@ export function CompareModal({ isOpen, onClose, branchId, onCompareComplete, ava
                     </div>
 
                     {!result.error && result.branch_id && (
-                      <div className="p-3 bg-[#111111] border-t border-[#1e1e1e]">
-                        <div className="text-[10px] text-[#555555] flex items-center justify-center gap-1">
-                          <GitBranch size={12} className="text-[#a0a0a0]" />
+                      <div className="p-3 bg-white border-t border-[#e8e8e8]">
+                        <div className="text-[10px] text-[#52504b] flex items-center justify-center gap-1">
+                          <GitBranch size={12} className="text-[#52504b]" />
                           Branch created automatically
                         </div>
                       </div>
