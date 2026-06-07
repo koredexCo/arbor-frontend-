@@ -60,7 +60,7 @@ export function Landing() {
       { f: 'n2', t: 'n5', d: 1 }, { f: 'n3', t: 'n6', d: 0 }, { f: 'n4', t: 'n7', d: 0 },
     ];
     const ro = ['m', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7'];
-    const gp = (n: any) => ({ x: n.fx * cv.width / dpr, y: n.fy * cv.height / dpr });
+    const gp = (n: any) => ({ x: n.fx * cv!.width / dpr, y: n.fy * cv!.height / dpr });
     const eo = (t: number) => 1 - Math.pow(1 - t, 3);
     const nr = (id: string) => ro.indexOf(id) / (ro.length - 1);
 
@@ -75,7 +75,7 @@ export function Landing() {
     const DUR = 2200;
 
     function draw(p: number) {
-      const W = cv.width / dpr, H = cv.height / dpr;
+      const W = cv!.width / dpr, H = cv!.height / dpr;
       ctx!.save(); ctx!.scale(dpr, dpr); ctx!.clearRect(0, 0, W, H);
       E.forEach(e => {
         const f = N.find(n => n.id === e.f), t = N.find(n => n.id === e.t);
