@@ -228,20 +228,20 @@ export function Dashboard() {
 
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <OnboardingOverlay onComplete={() => {}} />
       
       {/* Navbar */}
-      <nav className="bg-white backdrop- border-b border-[#e8e8e8] sticky top-0 z-40">
+      <nav className="bg-[#111111]/80 backdrop-blur-xl border-b border-[#1e1e1e] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 flex items-center justify-center">
               <img src="/arbor.svg" alt="Arbor Logo" className="h-full w-full object-contain" />
             </div>
-            <span className="text-base font-bold text-[#0a0a0a]">Arbor</span>
+            <span className="text-base font-bold text-white">Arbor</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/settings")} className="p-2.5 rounded bg-white text-[#52504b] hover:text-[#0a0a0a] hover:bg-white transition-all" title="Settings">
+            <button onClick={() => navigate("/settings")} className="p-2.5 rounded-xl bg-[#1f1f1f] text-[#888888] hover:text-white hover:bg-[#222222] transition-all" title="Settings">
               <Settings size={16} />
             </button>
           </div>
@@ -260,7 +260,7 @@ export function Dashboard() {
             <button 
               key={t.id}
               onClick={() => setView(t.id as any)}
-              className={`px-6 py-2 rounded text-sm font-bold transition-all flex items-center gap-2 ${view === t.id ? "bg-white text-black shadow-lg glow-brand" : "bg-white text-[#52504b] hover:text-[#0a0a0a]"}`}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === t.id ? "bg-white text-black shadow-lg glow-brand" : "bg-[#111111] text-[#888888] hover:text-white"}`}
             >
               <t.icon size={16} />
               {t.label}
@@ -270,8 +270,8 @@ export function Dashboard() {
 
         {view === "personal" && (
           <div className="animate-fade-in">
-             <h1 className="text-2xl font-bold text-[#0a0a0a] mb-8">Personal Dashboard</h1>
-             <div className="bg-white border border-[#e8e8e8] rounded shadow-sm overflow-hidden">
+             <h1 className="text-2xl font-bold text-white mb-8">Personal Dashboard</h1>
+             <div className="glass-card overflow-hidden">
                 <div className="max-h-[600px] overflow-y-auto">
                   <ConversationList 
                     conversations={conversations.filter(c => !c.project_id)} 
@@ -294,20 +294,20 @@ export function Dashboard() {
                 {selectedProject && (
                   <button 
                     onClick={() => setSelectedProject(null)}
-                    className="p-2 rounded bg-white text-[#52504b] hover:text-[#0a0a0a] transition-colors"
+                    className="p-2 rounded-xl bg-[#111111] text-[#888888] hover:text-white transition-colors"
                   >
                     <ArrowLeft size={20} />
                   </button>
                 )}
                 <div>
-                  <h1 className="text-2xl font-bold text-[#0a0a0a]">
+                  <h1 className="text-2xl font-bold text-white">
                     {selectedProject ? selectedProject.name : "Team Projects"}
                   </h1>
-                  {selectedProject && <p className="text-sm text-[#52504b]">{selectedProject.description}</p>}
+                  {selectedProject && <p className="text-sm text-[#555555]">{selectedProject.description}</p>}
                 </div>
               </div>
               {!selectedProject && (
-                <button onClick={() => setShowWizard(true)} className="text-sm text-gray-300 hover:text-[#0a0a0a] border border-gray-700 hover:border-gray-500 px-4 py-2 rounded transition-colors">
+                <button onClick={() => setShowWizard(true)} className="text-sm text-gray-300 hover:text-white border border-gray-700 hover:border-gray-500 px-4 py-2 rounded-lg transition-colors">
                   + New Project
                 </button>
               )}
@@ -315,12 +315,12 @@ export function Dashboard() {
 
             {selectedProject ? (
               <div className="animate-fade-in">
-                <div className="bg-white border border-[#e8e8e8] rounded shadow-sm overflow-hidden">
-                  <div className="p-4 border-b border-[#e8e8e8] flex justify-between items-center bg-white">
-                    <span className="text-xs font-black text-[#52504b] uppercase tracking-widest">Project Conversations</span>
+                <div className="glass-card overflow-hidden">
+                  <div className="p-4 border-b border-[#1e1e1e] flex justify-between items-center bg-[#111111]/30">
+                    <span className="text-xs font-black text-[#555555] uppercase tracking-widest">Project Conversations</span>
                     <button 
                       onClick={() => handleCreate("New Project Conversation")}
-                      className="text-sm text-gray-300 hover:text-[#0a0a0a] border border-gray-700 hover:border-gray-500 px-4 py-2 rounded transition-colors"
+                      className="text-sm text-gray-300 hover:text-white border border-gray-700 hover:border-gray-500 px-4 py-2 rounded-lg transition-colors"
                     >
                       + New Conversation
                     </button>
@@ -341,14 +341,14 @@ export function Dashboard() {
             ) : projectsLoading && projects.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6 h-32  bg-white" />
+                  <div key={i} className="glass-card p-6 h-32 animate-pulse bg-[#1f1f1f]/50" />
                 ))}
               </div>
             ) : projects.length === 0 ? (
-              <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-12 text-center">
-                <Users size={48} className="mx-auto text-[#52504b] mb-4" />
-                <h3 className="text-xl font-bold text-[#0a0a0a] mb-2">No projects yet</h3>
-                <p className="text-[#52504b] mb-6">Create a project to collaborate with your team on branched conversations.</p>
+              <div className="glass-card p-12 text-center">
+                <Users size={48} className="mx-auto text-[#444444] mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">No projects yet</h3>
+                <p className="text-[#555555] mb-6">Create a project to collaborate with your team on branched conversations.</p>
                 <button onClick={() => setShowWizard(true)} className="btn-primary inline-flex items-center gap-2">
                   <Plus size={16} /> Create First Project
                 </button>
@@ -359,21 +359,21 @@ export function Dashboard() {
                   <div 
                     key={project.id} 
                     onClick={() => handleProjectClick(project)}
-                    className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6 group hover:border-[#e8e8e8] transition-all cursor-pointer relative overflow-hidden"
+                    className="glass-card p-6 group hover:border-[#2a2a2a] transition-all cursor-pointer relative overflow-hidden"
                   >
-                    <div className="absolute top-0 right-0 p-4  group-hover: transition-opacity flex items-center gap-2">
+                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                       <button 
                         onClick={(e) => handleDeleteProject(e, project.id)}
-                        className="p-1 text-[#52504b] hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                        className="p-1 text-[#a0a0a0] hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                         title="Delete project"
                       >
                         <Trash2 size={14} />
                       </button>
-                      <ChevronRight size={16} className="text-[#52504b]" />
+                      <ChevronRight size={16} className="text-[#a0a0a0]" />
                     </div>
-                    <h3 className="text-lg font-bold text-[#0a0a0a] mb-2 group-hover:text-[#52504b] transition-colors">{project.name}</h3>
-                    <p className="text-xs text-[#52504b] mb-4 line-clamp-2">{project.description || "No description provided."}</p>
-                    <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-[#52504b]">
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#a0a0a0] transition-colors">{project.name}</h3>
+                    <p className="text-xs text-[#555555] mb-4 line-clamp-2">{project.description || "No description provided."}</p>
+                    <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-[#555555]">
                       <span>{project.members || 1} members</span>
                       <span>{conversations.filter(c => c.project_id === project.id).length} conversations</span>
                     </div>
@@ -387,38 +387,38 @@ export function Dashboard() {
         {view === "insights" && (
           <div className="animate-fade-in">
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-[#0a0a0a] mb-1">Your Insights</h1>
-              <p className="text-[#52504b]">Real stats from your conversations</p>
+              <h1 className="text-2xl font-bold text-white mb-1">Your Insights</h1>
+              <p className="text-[#555555]">Real stats from your conversations</p>
             </div>
 
             {insightsLoading ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6 h-40  bg-white" />
+                  <div key={i} className="glass-card p-6 h-40 animate-pulse bg-[#1f1f1f]/50" />
                 ))}
               </div>
             ) : !insightsData ? (
-              <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-12 text-center">
-                <p className="text-[#52504b]">No data yet. Start some conversations to see your insights.</p>
+              <div className="glass-card p-12 text-center">
+                <p className="text-[#555555]">No data yet. Start some conversations to see your insights.</p>
               </div>
             ) : (
               <>
                 {/* Row 1 — Key numbers */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">Total Conversations</h3>
-                    <p className="text-4xl font-black text-[#0a0a0a]">{insightsData.total_conversations}</p>
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">Total Conversations</h3>
+                    <p className="text-4xl font-black text-white">{insightsData.total_conversations}</p>
                   </div>
 
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">Branches Created</h3>
-                    <p className="text-4xl font-black text-[#0a0a0a]">{insightsData.total_branches}</p>
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">Branches Created</h3>
+                    <p className="text-4xl font-black text-white">{insightsData.total_branches}</p>
                   </div>
 
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">Messages This Week</h3>
-                    <p className="text-4xl font-black text-[#0a0a0a]">{insightsData.messages_this_week}</p>
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">Messages This Week</h3>
+                    <p className="text-4xl font-black text-white">{insightsData.messages_this_week}</p>
                   </div>
 
                 </div>
@@ -427,44 +427,44 @@ export function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                   {/* Most active conversation */}
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-6">Most Active Conversation</h3>
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-6">Most Active Conversation</h3>
                     {insightsData.most_active_conversation ? (
                       <>
-                        <p className="text-sm font-bold text-[#0a0a0a] truncate mb-1">
+                        <p className="text-sm font-bold text-white truncate mb-1">
                           {insightsData.most_active_conversation.title}
                         </p>
-                        <p className="text-xs text-[#52504b]">
+                        <p className="text-xs text-[#555555]">
                           {insightsData.most_active_conversation.message_count} messages
                         </p>
                       </>
                     ) : (
-                      <p className="text-xs text-[#52504b]">No conversations yet</p>
+                      <p className="text-xs text-[#444444]">No conversations yet</p>
                     )}
                   </div>
 
                   {/* Top models */}
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-6">Models Used</h3>
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-6">Models Used</h3>
                     {insightsData.top_models.length > 0 ? (
                       <div className="space-y-3">
                         {insightsData.top_models.map((m: any, i: number) => (
                           <div key={i} className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#0a0a0a] truncate max-w-[70%]">{m.model}</span>
-                            <span className="text-xs text-[#52504b] flex-shrink-0 ml-2">{m.count}×</span>
+                            <span className="text-xs font-bold text-white truncate max-w-[70%]">{m.model}</span>
+                            <span className="text-xs text-[#555555] flex-shrink-0 ml-2">{m.count}×</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-[#52504b]">Send some messages first</p>
+                      <p className="text-xs text-[#444444]">Send some messages first</p>
                     )}
                   </div>
 
                   {/* Deepest branch */}
-                  <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
-                    <h3 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-6">Deepest Branch</h3>
-                    <p className="text-4xl font-black text-[#0a0a0a] mb-1">{insightsData.max_branch_depth}</p>
-                    <p className="text-xs text-[#52504b]">
+                  <div className="glass-card p-6">
+                    <h3 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-6">Deepest Branch</h3>
+                    <p className="text-4xl font-black text-white mb-1">{insightsData.max_branch_depth}</p>
+                    <p className="text-xs text-[#555555]">
                       {insightsData.max_branch_depth === 0 ? "No branches yet" : "levels deep"}
                     </p>
                   </div>
@@ -478,11 +478,11 @@ export function Dashboard() {
         {view === "admin" && isPlatformAdmin && (
           <div className="animate-fade-in space-y-8">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-[#0a0a0a]">Platform Admin</h1>
+              <h1 className="text-2xl font-bold text-white">Platform Admin</h1>
               <button
                 onClick={loadAdminData}
                 disabled={adminLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-[#e8e8e8] text-[#52504b] hover:text-[#0a0a0a] text-sm transition-all disabled:"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111111] border border-[#1e1e1e] text-[#888888] hover:text-white text-sm transition-all disabled:opacity-40"
               >
                 <RefreshCw size={14} className={adminLoading ? "animate-spin" : ""} />
                 Refresh
@@ -491,7 +491,7 @@ export function Dashboard() {
 
             {/* Platform Stats */}
             <div>
-              <h2 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">Platform Stats</h2>
+              <h2 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">Platform Stats</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { label: "Total Users", value: adminStats?.totalUsers ?? "—", icon: Users },
@@ -499,13 +499,13 @@ export function Dashboard() {
                   { label: "Total Projects", value: adminStats?.totalProjects ?? "—", icon: GitBranch },
                   { label: "Active (7d)", value: adminStats?.activeUsers7d ?? "—", icon: Crown },
                 ].map(stat => (
-                  <div key={stat.label} className="bg-white border border-[#e8e8e8] rounded shadow-sm p-5">
+                  <div key={stat.label} className="glass-card p-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <stat.icon size={14} className="text-[#52504b]" />
-                      <span className="text-[10px] font-black text-[#52504b] uppercase tracking-widest">{stat.label}</span>
+                      <stat.icon size={14} className="text-[#555555]" />
+                      <span className="text-[10px] font-black text-[#555555] uppercase tracking-widest">{stat.label}</span>
                     </div>
-                    <p className="text-3xl font-black text-[#0a0a0a]">
-                      {adminLoading ? <span className=" text-[#333]" >...</span> : stat.value}
+                    <p className="text-3xl font-black text-white">
+                      {adminLoading ? <span className="animate-pulse text-[#333]" >...</span> : stat.value}
                     </p>
                   </div>
                 ))}
@@ -514,16 +514,16 @@ export function Dashboard() {
 
             {/* System Health */}
             <div>
-              <h2 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">System Health</h2>
-              <div className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+              <h2 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">System Health</h2>
+              <div className="glass-card p-6">
                 {systemHealth ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Activity size={14} className="text-[#52504b]" />
-                        <span className="text-sm text-[#0a0a0a] font-medium">Backend Status</span>
+                        <Activity size={14} className="text-[#555555]" />
+                        <span className="text-sm text-white font-medium">Backend Status</span>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded ${
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                         systemHealth.status === "HEALTHY" ? "bg-green-500/10 text-green-400 border border-green-500/20" :
                         systemHealth.status === "DEGRADED" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                         "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -531,39 +531,39 @@ export function Dashboard() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Database size={14} className="text-[#52504b]" />
-                        <span className="text-sm text-[#0a0a0a] font-medium">Database</span>
+                        <Database size={14} className="text-[#555555]" />
+                        <span className="text-sm text-white font-medium">Database</span>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded ${
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                         systemHealth.subsystems?.database === "ok" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
                       }`}>{systemHealth.subsystems?.database ?? "unknown"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Key size={14} className="text-[#52504b]" />
-                        <span className="text-sm text-[#0a0a0a] font-medium">OpenRouter API</span>
+                        <Key size={14} className="text-[#555555]" />
+                        <span className="text-sm text-white font-medium">OpenRouter API</span>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded ${
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                         systemHealth.subsystems?.openrouter !== "error" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
                       }`}>{systemHealth.subsystems?.openrouter ?? "unknown"}</span>
                     </div>
-                    <div className="pt-3 border-t border-[#e8e8e8] grid grid-cols-3 gap-4">
+                    <div className="pt-3 border-t border-[#1e1e1e] grid grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-lg font-black text-[#0a0a0a]">{systemHealth.metrics?.embedding_queue_depth ?? 0}</p>
-                        <p className="text-[10px] text-[#52504b] uppercase tracking-widest">Embed Queue</p>
+                        <p className="text-lg font-black text-white">{systemHealth.metrics?.embedding_queue_depth ?? 0}</p>
+                        <p className="text-[10px] text-[#555555] uppercase tracking-widest">Embed Queue</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-lg font-black text-[#0a0a0a]">{systemHealth.metrics?.snapshot_queue_depth ?? 0}</p>
-                        <p className="text-[10px] text-[#52504b] uppercase tracking-widest">Snapshot Queue</p>
+                        <p className="text-lg font-black text-white">{systemHealth.metrics?.snapshot_queue_depth ?? 0}</p>
+                        <p className="text-[10px] text-[#555555] uppercase tracking-widest">Snapshot Queue</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-lg font-black text-[#0a0a0a]">{systemHealth.metrics?.failed_tasks ?? 0}</p>
-                        <p className="text-[10px] text-[#52504b] uppercase tracking-widest">Failed Tasks</p>
+                        <p className="text-lg font-black text-white">{systemHealth.metrics?.failed_tasks ?? 0}</p>
+                        <p className="text-[10px] text-[#555555] uppercase tracking-widest">Failed Tasks</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-[#52504b] text-center py-4">
+                  <p className="text-sm text-[#555555] text-center py-4">
                     {adminLoading ? "Loading..." : "Health data unavailable"}
                   </p>
                 )}
@@ -572,40 +572,40 @@ export function Dashboard() {
 
             {/* User Management */}
             <div>
-              <h2 className="text-xs font-black text-[#52504b] uppercase tracking-widest mb-4">User Management</h2>
-              <div className="bg-white border border-[#e8e8e8] rounded shadow-sm overflow-hidden">
+              <h2 className="text-xs font-black text-[#555555] uppercase tracking-widest mb-4">User Management</h2>
+              <div className="glass-card overflow-hidden">
                 <div className="max-h-[400px] overflow-y-auto">
                   {adminLoading ? (
                     <div className="space-y-2 p-4">
-                      {[1,2,3,4].map(i => <div key={i} className="h-14 bg-white rounded " />)}
+                      {[1,2,3,4].map(i => <div key={i} className="h-14 bg-[#1a1a1a] rounded-xl animate-pulse" />)}
                     </div>
                   ) : adminUsers.length === 0 ? (
-                    <p className="text-sm text-[#52504b] text-center py-8">No users found</p>
+                    <p className="text-sm text-[#555555] text-center py-8">No users found</p>
                   ) : (
                     adminUsers.map((u: any) => {
                       const isBanned = u.banned_until && new Date(u.banned_until) > new Date();
                       const isMe = u.email === PLATFORM_ADMIN_EMAIL;
                       return (
-                        <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-[#1a1a1a] last:border-0 hover:bg-white transition-colors">
+                        <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-[#1a1a1a] last:border-0 hover:bg-[#111111]/50 transition-colors">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-[#0a0a0a] truncate">
+                            <p className="text-sm font-medium text-white truncate">
                               {u.email || "(no email)"}
-                              {isMe && <span className="ml-2 text-[10px] text-[#52504b] bg-white px-1.5 py-0.5 rounded">you</span>}
+                              {isMe && <span className="ml-2 text-[10px] text-[#888888] bg-[#1a1a1a] px-1.5 py-0.5 rounded">you</span>}
                             </p>
-                            <p className="text-[10px] text-[#52504b] font-mono mt-0.5">{u.id}</p>
+                            <p className="text-[10px] text-[#444444] font-mono mt-0.5">{u.id}</p>
                           </div>
                           <div className="flex items-center gap-3 flex-shrink-0">
                             {isBanned && (
-                              <span className="text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">Suspended</span>
+                              <span className="text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">Suspended</span>
                             )}
                             {!isMe && (
                               <button
                                 onClick={() => handleSuspendUser(u.id, isBanned)}
                                 disabled={suspendingUser === u.id}
-                                className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded border transition-all disabled: ${
+                                className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all disabled:opacity-40 ${
                                   isBanned
-                                    ? "border-[#e8e8e8] text-[#52504b] hover:text-green-400 hover:border-green-500/40"
-                                    : "border-[#e8e8e8] text-[#52504b] hover:text-red-400 hover:border-red-500/40"
+                                    ? "border-[#2a2a2a] text-[#888888] hover:text-green-400 hover:border-green-500/40"
+                                    : "border-[#2a2a2a] text-[#888888] hover:text-red-400 hover:border-red-500/40"
                                 }`}
                               >
                                 <UserX size={11} />
@@ -625,14 +625,14 @@ export function Dashboard() {
       </div>
 
       {/* Footer */}
-      <footer className="text-center py-6 text-[#52504b] text-sm border-t border-[#e8e8e8]">
+      <footer className="text-center py-6 text-[#444444] text-sm border-t border-[#1f1f1f]/50">
         <span>Arbor by Koredex</span>
         {' · '}
-        <a href="/privacy" className="hover:text-[#52504b] transition-colors">Privacy</a>
+        <a href="/privacy" className="hover:text-[#888888] transition-colors">Privacy</a>
         {' · '}
-        <a href="/terms" className="hover:text-[#52504b] transition-colors">Terms</a>
+        <a href="/terms" className="hover:text-[#888888] transition-colors">Terms</a>
         {' · '}
-        <a href="mailto:hello@koredex.com" className="hover:text-[#52504b] transition-colors">Contact</a>
+        <a href="mailto:hello@koredex.com" className="hover:text-[#888888] transition-colors">Contact</a>
       </footer>
 
       {/* Tree Setup Wizard */}

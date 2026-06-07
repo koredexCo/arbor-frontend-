@@ -94,15 +94,15 @@ export function ConversationList({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-[#e8e8e8]">
+      <div className="p-4 border-b border-[#1e1e1e]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#52504b] uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-[#c0c0c0] uppercase tracking-wider">
             Conversations
           </h2>
           <button
             onClick={() => setShowNewInput(true)}
-            className="text-sm text-gray-300 hover:text-[#0a0a0a] border border-gray-700
-                       hover:border-gray-500 px-4 py-2 rounded transition-colors"
+            className="text-sm text-gray-300 hover:text-white border border-gray-700
+                       hover:border-gray-500 px-4 py-2 rounded-lg transition-colors"
           >
             + New Conversation
           </button>
@@ -110,15 +110,15 @@ export function ConversationList({
 
         {/* Search */}
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#52504b]" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444444]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="w-full bg-white text-sm text-[#52504b] rounded pl-9 pr-3 py-2
-                       border border-[#e8e8e8] placeholder:text-[#52504b]
-                       focus:outline-none focus:border-[#e8e8e8] transition-colors"
+            className="w-full bg-[#111111] text-sm text-[#a0a0a0] rounded-lg pl-9 pr-3 py-2
+                       border border-[#1e1e1e] placeholder:text-[#444444]
+                       focus:outline-none focus:border-[#444444] transition-colors"
           />
         </div>
       </div>
@@ -157,12 +157,12 @@ export function ConversationList({
         {loading ? (
           <div className="space-y-2 p-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="skeleton h-14 rounded" />
+              <div key={i} className="skeleton h-14 rounded-xl" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-[#52504b]">
-            <MessageSquare size={24} className="mx-auto mb-2 " />
+          <div className="text-center py-12 text-[#444444]">
+            <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
             <p className="text-xs">
               {search ? "No matching conversations" : "No conversations yet"}
             </p>
@@ -176,20 +176,20 @@ export function ConversationList({
             return (
               <div
                 key={conv.id}
-                className={`group relative flex items-center gap-3 px-3 py-3 rounded cursor-pointer
+                className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer
                             transition-all duration-200
                   ${isActive
-                    ? "bg-white border-l-2 border-l-white border-y-0 border-r-0 rounded-l-none"
-                    : "hover:bg-white border border-transparent"
+                    ? "bg-[#1a1a1a] border-l-2 border-l-white border-y-0 border-r-0 rounded-l-none"
+                    : "hover:bg-[#111111] border border-transparent"
                   }`}
                 onClick={() => !isEditing && onSelect(conv.id)}
                 onMouseEnter={() => setHoveredId(conv.id)}
                 onMouseLeave={() => setHoveredId(null)}
               >
-                <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
                   ${isActive
                     ? "bg-white text-black"
-                    : "bg-white text-[#52504b]"
+                    : "bg-[#1a1a1a] text-[#555555]"
                   }`}>
                   <MessageSquare size={14} />
                 </div>
@@ -206,25 +206,25 @@ export function ConversationList({
                           if (e.key === 'Enter') handleRename(conv.id, editTitle);
                           if (e.key === 'Escape') setEditingId(null);
                         }}
-                        className="flex-1 bg-transparent border-b border-[#e8e8e8] outline-none
-                                   text-[#0a0a0a] text-sm py-0.5 min-w-0"
+                        className="flex-1 bg-transparent border-b border-[#444444] outline-none
+                                   text-white text-sm py-0.5 min-w-0"
                       />
                       <button
                         onClick={() => handleRename(conv.id, editTitle)}
-                        className="text-[#52504b] hover:text-[#0a0a0a] p-0.5"
+                        className="text-[#888888] hover:text-white p-0.5"
                       >
                         <Check size={12} />
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
-                        className="text-[#52504b] hover:text-[#0a0a0a] p-0.5"
+                        className="text-[#888888] hover:text-white p-0.5"
                       >
                         <X size={12} />
                       </button>
                     </div>
                   ) : (
                     <p
-                      className={`text-sm font-medium truncate ${isActive ? "text-[#0a0a0a]" : "text-[#52504b]"}`}
+                      className={`text-sm font-medium truncate ${isActive ? "text-white" : "text-[#888888]"}`}
                       onDoubleClick={e => {
                         e.stopPropagation();
                         setEditingId(conv.id);
@@ -235,7 +235,7 @@ export function ConversationList({
                       {conv.title}
                     </p>
                   )}
-                  <p className="text-[10px] text-[#52504b] mt-0.5">
+                  <p className="text-[10px] text-[#444444] mt-0.5">
                     {formatDate(conv.created_at)}
                   </p>
                 </div>
@@ -250,7 +250,7 @@ export function ConversationList({
                         setEditTitle(conv.title);
                       }}
                       className="w-6 h-6 rounded-md flex items-center justify-center
-                                 text-[#52504b] hover:text-[#0a0a0a] hover:bg-[#2a2a2a] transition-all"
+                                 text-[#555555] hover:text-white hover:bg-[#2a2a2a] transition-all"
                       title="Rename"
                     >
                       <Pencil size={11} />
@@ -258,7 +258,7 @@ export function ConversationList({
                     <button
                       onClick={e => handleDeleteConfirm(e, conv.id)}
                       className="w-6 h-6 rounded-md flex items-center justify-center
-                                 text-[#52504b] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                 text-[#555555] hover:text-red-400 hover:bg-red-500/10 transition-all"
                       title="Delete"
                     >
                       <Trash2 size={11} />

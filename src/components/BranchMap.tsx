@@ -32,7 +32,7 @@ interface BranchNodeData {
 function BranchNode({ data }: { data: BranchNodeData }) {
   return (
     <div
-      className={`relative rounded border transition-all duration-200 select-none`}
+      className={`relative rounded-xl border transition-all duration-200 select-none`}
       style={{
         minWidth: 160,
         maxWidth: 200,
@@ -176,9 +176,9 @@ function BranchMapInternal({ branches, currentBranchId, onBranchClick }: Props) 
 
   if (!branches.length) {
     return (
-      <div className="flex items-center justify-center h-full text-[#52504b]">
+      <div className="flex items-center justify-center h-full text-[#444444]">
         <div className="text-center">
-          <GitBranch size={32} className="mx-auto mb-2 " />
+          <GitBranch size={32} className="mx-auto mb-2 opacity-40" />
           <p className="text-sm">No branches yet</p>
         </div>
       </div>
@@ -199,7 +199,7 @@ function BranchMapInternal({ branches, currentBranchId, onBranchClick }: Props) 
     >
       <Controls
         showInteractive={false}
-        className="!bg-white !border-[#e8e8e8] !rounded"
+        className="!bg-[#1f1f1f] !border-[#222222] !rounded-xl"
       />
       <Background
         variant={BackgroundVariant.Dots}

@@ -92,23 +92,23 @@ export function AccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#e0e0e0]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#e0e0e0]">
       {/* Header */}
-      <div className="border-b border-[#e8e8e8] bg-white backdrop- sticky top-0 z-10">
+      <div className="border-b border-[#1f1f1f]/50 bg-[#111111]/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded hover:bg-white transition-colors text-[#52504b] hover:text-[#0a0a0a]"
+            className="p-2 rounded-lg hover:bg-[#1f1f1f] transition-colors text-[#888888] hover:text-white"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-[#0a0a0a]">Account</h1>
-            <p className="text-xs text-[#52504b]">{user?.email}</p>
+            <h1 className="text-lg font-bold text-white">Account</h1>
+            <p className="text-xs text-[#555555]">{user?.email}</p>
           </div>
           <button
             onClick={handleSignOut}
-            className="ml-auto flex items-center gap-2 px-4 py-2 rounded bg-white hover:bg-white text-[#52504b] hover:text-[#0a0a0a] text-sm transition-colors"
+            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1f1f1f] hover:bg-[#222222] text-[#c0c0c0] hover:text-white text-sm transition-colors"
           >
             <LogOut size={14} />
             Sign Out
@@ -119,12 +119,12 @@ export function AccountPage() {
       <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
 
         {/* Profile */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
-              <User size={16} className="text-[#52504b]" />
+            <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
+              <User size={16} className="text-[#a0a0a0]" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Profile</h2>
+            <h2 className="text-base font-semibold text-white">Profile</h2>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
@@ -132,17 +132,17 @@ export function AccountPage() {
               <img
                 src={profile.avatar_url}
                 alt="avatar"
-                className="w-16 h-16 rounded object-cover ring-2 ring-surface-700"
+                className="w-16 h-16 rounded-full object-cover ring-2 ring-surface-700"
               />
             ) : (
-              <div className="w-16 h-16 rounded bg-white  to-white flex items-center justify-center text-[#0a0a0a] font-bold text-xl">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#666666] to-white flex items-center justify-center text-white font-bold text-xl">
                 {(fullName || user?.email || 'U')[0].toUpperCase()}
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-[#0a0a0a]">{fullName || 'No name set'}</p>
-              <p className="text-xs text-[#52504b]">{user?.email}</p>
-              <p className="text-xs text-[#52504b] mt-0.5">
+              <p className="text-sm font-medium text-white">{fullName || 'No name set'}</p>
+              <p className="text-xs text-[#555555]">{user?.email}</p>
+              <p className="text-xs text-[#444444] mt-0.5">
                 Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
               </p>
             </div>
@@ -150,7 +150,7 @@ export function AccountPage() {
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-[#52504b] uppercase tracking-wider mb-1 block">
+              <label className="text-xs text-[#555555] uppercase tracking-wider mb-1 block">
                 Display Name
               </label>
               <input
@@ -170,18 +170,18 @@ export function AccountPage() {
                 <Save size={14} />
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
-              {saveMsg && <p className="text-xs text-[#0a0a0a]">{saveMsg}</p>}
+              {saveMsg && <p className="text-xs text-white">{saveMsg}</p>}
             </div>
           </div>
         </section>
 
         {/* Usage */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
-              <BarChart2 size={16} className="text-[#52504b]" />
+            <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
+              <BarChart2 size={16} className="text-[#a0a0a0]" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Usage (Last 30 Days)</h2>
+            <h2 className="text-base font-semibold text-white">Usage (Last 30 Days)</h2>
           </div>
           {usage ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -190,29 +190,29 @@ export function AccountPage() {
                 { label: 'Tokens Used', value: (usage.total_tokens ?? 0).toLocaleString() },
                 { label: 'API Keys Stored', value: apiKeys.length },
               ].map((stat, i) => (
-                <div key={i} className="bg-white rounded p-4">
-                  <p className="text-2xl font-bold text-[#0a0a0a]">{stat.value}</p>
-                  <p className="text-xs text-[#52504b] mt-1">{stat.label}</p>
+                <div key={i} className="bg-[#1f1f1f]/50 rounded-xl p-4">
+                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-[#555555] mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-[#52504b]">Loading usage...</div>
+            <div className="text-sm text-[#555555]">Loading usage...</div>
           )}
         </section>
 
         {/* API Keys */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center">
-              <Key size={16} className="text-[#52504b]" />
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <Key size={16} className="text-[#888888]" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Stored API Keys</h2>
+            <h2 className="text-base font-semibold text-white">Stored API Keys</h2>
           </div>
           {apiKeys.length === 0 ? (
-            <p className="text-sm text-[#52504b]">
+            <p className="text-sm text-[#555555]">
               No API keys stored. Add them in{' '}
-              <button onClick={() => navigate('/settings')} className="text-[#52504b] hover:underline">
+              <button onClick={() => navigate('/settings')} className="text-[#a0a0a0] hover:underline">
                 Settings
               </button>
               .
@@ -222,17 +222,17 @@ export function AccountPage() {
               {apiKeys.map((key, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between py-2 px-3 bg-white rounded"
+                  className="flex items-center justify-between py-2 px-3 bg-[#1f1f1f]/50 rounded-lg"
                 >
                   <div>
-                    <p className="text-sm font-medium text-[#0a0a0a] capitalize">{key.provider}</p>
-                    <p className="text-xs text-[#52504b]">
+                    <p className="text-sm font-medium text-white capitalize">{key.provider}</p>
+                    <p className="text-xs text-[#555555]">
                       Added {new Date(key.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <button
                     onClick={() => removeApiKey(key.provider)}
-                    className="text-[#52504b] hover:text-red-400 transition-colors"
+                    className="text-[#555555] hover:text-red-400 transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -243,24 +243,24 @@ export function AccountPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6 border border-red-500/20">
+        <section className="glass-card p-6 border border-red-500/20">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
               <AlertCircle size={16} className="text-red-400" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Danger Zone</h2>
+            <h2 className="text-base font-semibold text-white">Danger Zone</h2>
           </div>
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm border border-red-500/20 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm border border-red-500/20 transition-colors"
             >
               <Trash2 size={14} />
               Delete Account
             </button>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-[#52504b]">
+              <p className="text-sm text-[#888888]">
                 Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
               </p>
               <input
@@ -274,13 +274,13 @@ export function AccountPage() {
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleteInput !== 'DELETE'}
-                  className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 disabled: text-[#0a0a0a] text-sm transition-colors"
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm transition-colors"
                 >
                   Delete My Account
                 </button>
                 <button
                   onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}
-                  className="px-4 py-2 rounded bg-white hover:bg-white text-[#52504b] text-sm transition-colors"
+                  className="px-4 py-2 rounded-lg bg-[#1f1f1f] hover:bg-[#222222] text-[#c0c0c0] text-sm transition-colors"
                 >
                   Cancel
                 </button>

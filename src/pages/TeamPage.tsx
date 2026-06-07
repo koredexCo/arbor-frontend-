@@ -9,10 +9,10 @@ import { getAccessToken } from '../services/api';
 const API = import.meta.env.VITE_API_URL;
 
 const ROLE_COLORS: Record<string, string> = {
-  owner:  'text-[#0a0a0a] bg-white/10 border-[#e8e8e8]',
-  admin:  'text-[#52504b] bg-white border-[#e8e8e8]',
-  member: 'text-[#52504b] bg-white border-[#e8e8e8]',
-  viewer: 'text-[#52504b] bg-[#0f0f0f] border-[#e8e8e8]',
+  owner:  'text-white bg-white/10 border-[#2a2a2a]',
+  admin:  'text-[#a0a0a0] bg-[#1a1a1a] border-[#2a2a2a]',
+  member: 'text-[#888888] bg-[#141414] border-[#2a2a2a]',
+  viewer: 'text-[#555555] bg-[#0f0f0f] border-[#1e1e1e]',
 };
 
 async function authFetch(path: string, options: RequestInit = {}) {
@@ -142,26 +142,26 @@ export function TeamPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#e8e8e8] border-t-white rounded animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#2a2a2a] border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#e0e0e0]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#e0e0e0]">
       {/* Header */}
-      <div className="border-b border-[#e8e8e8] bg-white backdrop- sticky top-0 z-10">
+      <div className="border-b border-[#1f1f1f]/50 bg-[#111111]/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded hover:bg-white transition-colors text-[#52504b] hover:text-[#0a0a0a]"
+            className="p-2 rounded-lg hover:bg-[#1f1f1f] transition-colors text-[#888888] hover:text-white"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-[#0a0a0a]">{project?.name ?? 'Team'}</h1>
-            <p className="text-xs text-[#52504b]">
+            <h1 className="text-lg font-bold text-white">{project?.name ?? 'Team'}</h1>
+            <p className="text-xs text-[#555555]">
               {members.length} member{members.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -171,32 +171,32 @@ export function TeamPage() {
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
 
         {/* Members list */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
-              <Users size={16} className="text-[#52504b]" />
+            <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
+              <Users size={16} className="text-[#a0a0a0]" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Members</h2>
+            <h2 className="text-base font-semibold text-white">Members</h2>
           </div>
 
           <div className="space-y-2">
             {members.map((m, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between py-3 px-4 bg-white rounded"
+                className="flex items-center justify-between py-3 px-4 bg-[#1f1f1f]/40 rounded-xl"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded bg-white border border-[#e8e8e8] flex items-center justify-center text-[#0a0a0a] text-sm font-bold">
+                  <div className="w-9 h-9 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-white text-sm font-bold">
                     {(m.email || m.user_id || 'U')[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#0a0a0a]">
+                    <p className="text-sm font-medium text-white">
                       {m.email || m.full_name || 'Member'}
                     </p>
-                    <p className="text-xs text-[#52504b] font-mono">
+                    <p className="text-xs text-[#444444] font-mono">
                       {m.user_id?.slice(0, 8)}...
                     </p>
-                    <p className="text-xs text-[#52504b]">
+                    <p className="text-xs text-[#555555]">
                       Joined {new Date(m.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -208,23 +208,23 @@ export function TeamPage() {
                       value={m.role}
                       disabled={updatingRole === m.user_id}
                       onChange={e => updateRole(m.user_id, e.target.value)}
-                      className="bg-white border border-[#e8e8e8] rounded px-2 py-1
-                                 text-xs text-[#52504b] outline-none cursor-pointer
-                                 hover:border-[#e8e8e8] transition-colors"
+                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1
+                                 text-xs text-[#888888] outline-none cursor-pointer
+                                 hover:border-[#3a3a3a] transition-colors"
                     >
                       <option value="admin">Admin</option>
                       <option value="member">Member</option>
                       <option value="viewer">Viewer</option>
                     </select>
                   ) : (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded border capitalize ${ROLE_COLORS[m.role] ?? ROLE_COLORS.member}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${ROLE_COLORS[m.role] ?? ROLE_COLORS.member}`}>
                       {m.role}
                     </span>
                   )}
                   {m.role !== 'owner' && m.user_id !== currentUserId && (
                     <button
                       onClick={() => removeMember(m.user_id)}
-                      className="text-[#52504b] hover:text-red-400 transition-colors"
+                      className="text-[#444444] hover:text-red-400 transition-colors"
                       title="Remove member"
                     >
                       <Trash2 size={14} />
@@ -234,18 +234,18 @@ export function TeamPage() {
               </div>
             ))}
             {members.length === 0 && (
-              <p className="text-sm text-[#52504b] text-center py-6">No members yet.</p>
+              <p className="text-sm text-[#444444] text-center py-6">No members yet.</p>
             )}
           </div>
         </section>
 
         {/* Invite form */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded bg-white/20 flex items-center justify-center">
-              <UserPlus size={16} className="text-[#0a0a0a]" />
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <UserPlus size={16} className="text-white" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Invite Member</h2>
+            <h2 className="text-base font-semibold text-white">Invite Member</h2>
           </div>
 
           <div className="flex gap-3 mb-3 flex-wrap sm:flex-nowrap">
@@ -269,10 +269,10 @@ export function TeamPage() {
             <button
               onClick={sendInvite}
               disabled={inviting || !inviteEmail.trim()}
-              className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:"
+              className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50"
             >
               {inviting ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <UserPlus size={14} />
               )}
@@ -281,17 +281,17 @@ export function TeamPage() {
           </div>
 
           {inviteError && (
-            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2 mb-3">
+            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
               {inviteError}
             </p>
           )}
 
           {inviteLink && (
-            <div className="flex items-center gap-2 p-3 bg-white/10 border border-[#e8e8e8] rounded mb-3">
-              <p className="text-xs text-[#0a0a0a] flex-1 truncate font-mono">{inviteLink}</p>
+            <div className="flex items-center gap-2 p-3 bg-white/10 border border-[#2a2a2a] rounded-xl mb-3">
+              <p className="text-xs text-white flex-1 truncate font-mono">{inviteLink}</p>
               <button
                 onClick={copyLink}
-                className="text-[#0a0a0a] hover:text-[#0a0a0a] flex items-center gap-1 text-xs whitespace-nowrap"
+                className="text-white hover:text-white flex items-center gap-1 text-xs whitespace-nowrap"
               >
                 {copied ? <Check size={12} /> : <Copy size={12} />}
                 {copied ? 'Copied!' : 'Copy'}
@@ -299,35 +299,35 @@ export function TeamPage() {
             </div>
           )}
 
-          <p className="text-xs text-[#52504b]">
+          <p className="text-xs text-[#444444]">
             An invite email will be sent. The link expires in 7 days.
           </p>
         </section>
 
         {/* Pending invites */}
         {invites.length > 0 && (
-          <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+          <section className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
-                <Clock size={16} className="text-[#52504b]" />
+              <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
+                <Clock size={16} className="text-[#888888]" />
               </div>
-              <h2 className="text-base font-semibold text-[#0a0a0a]">Pending Invites</h2>
+              <h2 className="text-base font-semibold text-white">Pending Invites</h2>
             </div>
             <div className="space-y-2">
               {invites.map((inv, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between py-2 px-4 bg-white rounded"
+                  className="flex items-center justify-between py-2 px-4 bg-[#1f1f1f]/40 rounded-xl"
                 >
                   <div>
-                    <p className="text-sm text-[#0a0a0a]">{inv.email}</p>
-                    <p className="text-xs text-[#52504b]">
+                    <p className="text-sm text-white">{inv.email}</p>
+                    <p className="text-xs text-[#555555]">
                       {inv.role} · Expires {new Date(inv.expires_at).toLocaleDateString()}
                     </p>
                   </div>
                   <button
                     onClick={() => cancelInvite(inv.id)}
-                    className="text-[#52504b] hover:text-red-400 transition-colors"
+                    className="text-[#444444] hover:text-red-400 transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -338,25 +338,25 @@ export function TeamPage() {
         )}
 
         {/* Role guide */}
-        <section className="bg-white border border-[#e8e8e8] rounded shadow-sm p-6">
+        <section className="glass-card p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded bg-white flex items-center justify-center">
-              <Shield size={16} className="text-[#52504b]" />
+            <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center">
+              <Shield size={16} className="text-[#a0a0a0]" />
             </div>
-            <h2 className="text-base font-semibold text-[#0a0a0a]">Role Permissions</h2>
+            <h2 className="text-base font-semibold text-white">Role Permissions</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             {[
-              { role: 'Owner',  color: 'text-[#52504b]',   perms: ['Full control', 'Billing', 'Delete project'] },
-              { role: 'Admin',  color: 'text-[#52504b]',   perms: ['Manage members', 'All conversations', 'Settings'] },
-              { role: 'Member', color: 'text-[#0a0a0a]', perms: ['Create branches', 'Chat', 'View all'] },
-              { role: 'Viewer', color: 'text-[#52504b]', perms: ['Read only', 'No messaging', 'No branching'] },
+              { role: 'Owner',  color: 'text-[#888888]',   perms: ['Full control', 'Billing', 'Delete project'] },
+              { role: 'Admin',  color: 'text-[#a0a0a0]',   perms: ['Manage members', 'All conversations', 'Settings'] },
+              { role: 'Member', color: 'text-white', perms: ['Create branches', 'Chat', 'View all'] },
+              { role: 'Viewer', color: 'text-[#888888]', perms: ['Read only', 'No messaging', 'No branching'] },
             ].map((r, i) => (
-              <div key={i} className="bg-white rounded p-3">
+              <div key={i} className="bg-[#1f1f1f]/40 rounded-xl p-3">
                 <p className={`font-semibold mb-2 ${r.color}`}>{r.role}</p>
                 <ul className="space-y-1">
                   {r.perms.map((p, j) => (
-                    <li key={j} className="text-[#52504b] flex items-center gap-1">
+                    <li key={j} className="text-[#888888] flex items-center gap-1">
                       <Eye size={9} className="shrink-0" /> {p}
                     </li>
                   ))}

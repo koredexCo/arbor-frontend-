@@ -36,20 +36,20 @@ export function OnboardingOverlay({ onComplete }: Props) {
   return (
     <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
       {/* Dimmed background that blocks clicks except on the highlighted element */}
-      <div className="absolute inset-0 bg-white pointer-events-auto transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-black/60 pointer-events-auto transition-opacity duration-500" />
       
-      <div className="relative z-50 bg-white border border-[#e8e8e8] rounded shadow-sm p-6 w-full max-w-md pointer-events-auto animate-scale-up shadow-md border-[#e8e8e8]">
-        <button onClick={complete} className="absolute top-4 right-4 text-[#52504b] hover:text-[#0a0a0a]">
+      <div className="relative z-50 glass-card p-6 w-full max-w-md pointer-events-auto animate-scale-up shadow-2xl border-[#2a2a2a]">
+        <button onClick={complete} className="absolute top-4 right-4 text-[#555555] hover:text-white">
           <X size={16} />
         </button>
 
         {step === 0 && (
           <div className="text-center">
-             <div className="w-12 h-12 bg-white text-[#52504b] rounded flex items-center justify-center mx-auto mb-4">
+             <div className="w-12 h-12 bg-[#1a1a1a] text-[#a0a0a0] rounded-full flex items-center justify-center mx-auto mb-4">
                <GitBranch size={24} />
              </div>
-             <h2 className="text-xl font-bold text-[#0a0a0a] mb-2">Welcome to Arbor</h2>
-             <p className="text-sm text-[#52504b] mb-6 leading-relaxed">
+             <h2 className="text-xl font-bold text-white mb-2">Welcome to Arbor</h2>
+             <p className="text-sm text-[#888888] mb-6 leading-relaxed">
                Unlike standard chat interfaces, here you can <strong>branch</strong> the conversation at any point. 
                Explore different ideas without losing your original context.
              </p>
@@ -61,11 +61,11 @@ export function OnboardingOverlay({ onComplete }: Props) {
 
         {step === 1 && (
           <div className="text-center">
-             <div className="w-12 h-12 bg-white text-gray-300 rounded flex items-center justify-center mx-auto mb-4">
+             <div className="w-12 h-12 bg-white text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                <Info size={24} />
              </div>
-             <h2 className="text-xl font-bold text-[#0a0a0a] mb-2">How to Branch</h2>
-             <p className="text-sm text-[#52504b] mb-6 leading-relaxed">
+             <h2 className="text-xl font-bold text-white mb-2">How to Branch</h2>
+             <p className="text-sm text-[#888888] mb-6 leading-relaxed">
                Hover over any message in the chat and click the <strong>Branch</strong> icon.
                A new timeline will be created starting from that exact point.
              </p>

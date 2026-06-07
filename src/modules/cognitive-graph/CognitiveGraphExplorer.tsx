@@ -81,9 +81,9 @@ export function CognitiveGraphExplorer() {
   return (
     <div className="absolute inset-0 flex flex-col bg-[#050505]">
       {/* Top Toolbar */}
-      <div className="h-12 border-b border-[#e8e8e8] bg-[#0A0A0A]/90 px-4 flex items-center justify-between z-10 shadow-lg">
+      <div className="h-12 border-b border-[#2a2a2a] bg-[#0A0A0A]/90 px-4 flex items-center justify-between z-10 shadow-lg">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-white border border-[#e8e8e8] rounded px-3 py-1.5">
+          <div className="flex items-center space-x-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-1.5">
             <Search className="w-4 h-4 text-slate-500" />
             <input 
               type="text" 
@@ -91,7 +91,7 @@ export function CognitiveGraphExplorer() {
               className="bg-transparent border-none outline-none text-xs text-slate-200 placeholder-slate-600 w-48"
             />
           </div>
-          <button className="flex items-center space-x-2 text-xs text-slate-400 hover:text-[#0a0a0a] transition-colors">
+          <button className="flex items-center space-x-2 text-xs text-slate-400 hover:text-white transition-colors">
             <Filter className="w-3.5 h-3.5" />
             <span>Filter Topology</span>
           </button>
@@ -99,11 +99,11 @@ export function CognitiveGraphExplorer() {
         <div className="flex items-center space-x-2">
           <div className="text-xs text-slate-500 mr-4 flex flex-col items-end">
             <span>Rendering {nodeCount} active nodes</span>
-            <span className="text-[10px] text-[#0a0a0a]/70">LOD: {zoomLevel.toUpperCase()} | Region Streaming ACTIVE</span>
+            <span className="text-[10px] text-white/70">LOD: {zoomLevel.toUpperCase()} | Region Streaming ACTIVE</span>
           </div>
-          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white rounded transition-colors"><ZoomIn className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white rounded transition-colors"><ZoomOut className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white rounded transition-colors"><Maximize className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-[#1a1a1a] rounded transition-colors"><ZoomIn className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-[#1a1a1a] rounded transition-colors"><ZoomOut className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-[#1a1a1a] rounded transition-colors"><Maximize className="w-4 h-4" /></button>
         </div>
       </div>
 
@@ -112,18 +112,18 @@ export function CognitiveGraphExplorer() {
         <div ref={containerRef} className="absolute inset-0 cursor-move" />
         
         {/* Floating Legend */}
-        <div className="absolute bottom-6 right-6 bg-[#0A0A0A]/90 border border-[#e8e8e8] rounded p-3 backdrop-blur shadow-md">
+        <div className="absolute bottom-6 right-6 bg-[#0A0A0A]/90 border border-[#2a2a2a] rounded-lg p-3 backdrop-blur shadow-2xl">
           <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Lineage Legend</h4>
           <div className="space-y-1.5">
             {[
-              { label: "Linear Context", color: "bg-white" },
+              { label: "Linear Context", color: "bg-[#1a1a1a]" },
               { label: "Divergence Point", color: "bg-rose-500" },
               { label: "Semantic Memory", color: "bg-purple-500" },
               { label: "Merged Branch", color: "bg-yellow-500" },
               { label: "Active Head", color: "bg-white" },
             ].map(item => (
               <div key={item.label} className="flex items-center text-xs text-slate-300">
-                <span className={`w-2 h-2 rounded ${item.color} mr-2 shadow-[0_0_5px_currentColor]`} />
+                <span className={`w-2 h-2 rounded-full ${item.color} mr-2 shadow-[0_0_5px_currentColor]`} />
                 {item.label}
               </div>
             ))}

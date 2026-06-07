@@ -63,31 +63,31 @@ export function JoinPage() {
 
   if (authLoading || status === 'loading') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 size={32} className="text-[#52504b] animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 size={32} className="text-[#a0a0a0] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6">
-      <div className="bg-white rounded p-10 w-[440px] max-w-full border border-[#e8e8e8] shadow-md text-center">
-        <div className="w-14 h-14 rounded bg-white  to-white flex items-center justify-center mx-auto mb-6 shadow-lg shadow-none">
-          <GitBranch size={26} className="text-[#0a0a0a]" />
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="bg-[#111111] rounded-2xl p-10 w-[440px] max-w-full border border-[#1e1e1e] shadow-2xl text-center">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#666666] to-white flex items-center justify-center mx-auto mb-6 shadow-lg shadow-none">
+          <GitBranch size={26} className="text-white" />
         </div>
 
         {status === 'ready' && invite && (
           <>
-            <h1 className="text-xl font-bold text-[#0a0a0a] mb-2">You're invited!</h1>
-            <p className="text-[#52504b] text-sm mb-1">
-              Join <span className="text-[#0a0a0a] font-semibold">{invite.project_name}</span>
+            <h1 className="text-xl font-bold text-white mb-2">You're invited!</h1>
+            <p className="text-[#888888] text-sm mb-1">
+              Join <span className="text-white font-semibold">{invite.project_name}</span>
             </p>
-            <p className="text-[#52504b] text-xs mb-8">
-              Role: <span className="text-[#52504b] capitalize">{invite.role}</span>
+            <p className="text-[#555555] text-xs mb-8">
+              Role: <span className="text-[#a0a0a0] capitalize">{invite.role}</span>
             </p>
             {!session ? (
               <>
-                <p className="text-[#52504b] text-sm mb-4">
+                <p className="text-[#888888] text-sm mb-4">
                   Sign in or create an account to accept this invite.
                 </p>
                 <button
@@ -107,25 +107,25 @@ export function JoinPage() {
 
         {status === 'accepting' && (
           <>
-            <Loader2 size={32} className="text-[#52504b] animate-spin mx-auto mb-4" />
-            <p className="text-[#52504b]">Joining project...</p>
+            <Loader2 size={32} className="text-[#a0a0a0] animate-spin mx-auto mb-4" />
+            <p className="text-[#888888]">Joining project...</p>
           </>
         )}
 
         {status === 'done' && (
           <>
-            <CheckCircle size={40} className="text-[#0a0a0a] mx-auto mb-4" />
-            <h2 className="text-lg font-bold text-[#0a0a0a] mb-2">Welcome aboard!</h2>
-            <p className="text-[#52504b] text-sm">{message}</p>
-            <p className="text-[#52504b] text-xs mt-2">Redirecting to dashboard...</p>
+            <CheckCircle size={40} className="text-white mx-auto mb-4" />
+            <h2 className="text-lg font-bold text-white mb-2">Welcome aboard!</h2>
+            <p className="text-[#888888] text-sm">{message}</p>
+            <p className="text-[#444444] text-xs mt-2">Redirecting to dashboard...</p>
           </>
         )}
 
         {status === 'error' && (
           <>
             <XCircle size={40} className="text-red-400 mx-auto mb-4" />
-            <h2 className="text-lg font-bold text-[#0a0a0a] mb-2">Invite Error</h2>
-            <p className="text-[#52504b] text-sm">{message}</p>
+            <h2 className="text-lg font-bold text-white mb-2">Invite Error</h2>
+            <p className="text-[#888888] text-sm">{message}</p>
             <button onClick={() => navigate('/')} className="btn-secondary mt-6">
               Go Home
             </button>
