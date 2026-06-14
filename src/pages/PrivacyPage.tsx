@@ -284,7 +284,7 @@ export function PrivacyPage() {
                 {[
                   ["Access", "Request a copy of the personal data we hold about you"],
                   ["Correction", "Ask us to correct inaccurate or incomplete data"],
-                  ["Deletion", "Request deletion of your data ("right to be forgotten")"],
+                  ["Deletion", "Request deletion of your data (\"right to be forgotten\")"],
                   ["Portability", "Request your data in a machine-readable format"],
                   ["Restriction", "Ask us to limit how we process your data"],
                   ["Objection", "Object to processing based on legitimate interests"],
