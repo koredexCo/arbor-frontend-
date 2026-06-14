@@ -26,8 +26,7 @@ export function SettingsPage() {
   const handleLogout = async () => {
     setLoggingOut(true);
     await supabase.auth.signOut();
-    // Redirect to the Koredex website after signing out
-    window.location.href = "https://koredex.com";
+    navigate("/");
   };
 
   // Settings state
@@ -604,7 +603,7 @@ export function SettingsPage() {
           <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white">Sign out</p>
-              <p className="text-xs text-[#555555] mt-0.5">You'll be taken to koredex.com</p>
+              <p className="text-xs text-[#555555] mt-0.5">You'll be returned to the Arbor home page</p>
             </div>
             <button
               id="settings-logout-btn"
