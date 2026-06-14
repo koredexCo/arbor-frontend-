@@ -13,6 +13,7 @@ import { OnboardingOverlay } from "../components/OnboardingOverlay";
 import { api, getAccessToken } from "../services/api";
 import { supabase } from "../lib/supabase";
 import { TreeSetupWizard } from "../components/TreeSetupWizard";
+import { useTermsGuard } from "../hooks/useTermsGuard";
 
 const PLATFORM_ADMIN_EMAIL = "chaturvediabhinav692@gmail.com";
 
@@ -20,6 +21,10 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isPlatformAdmin = user?.email === PLATFORM_ADMIN_EMAIL;
+
+  // Gate: redirect to /accept-terms if user hasn't accepted latest T&C
+  const { checked: termsChecked, needsAcceptance } = useTermsGuard();
+
   const {
     conversations,
     loading,
@@ -226,6 +231,9 @@ export function Dashboard() {
   };
 
 
+
+  // Don't render dashboard until terms check resolves (avoids flash before redirect)
+  if (!termsChecked || needsAcceptance) return null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
