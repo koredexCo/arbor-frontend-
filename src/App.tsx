@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -6,6 +6,10 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
+import { ThemeProvider } from "./hooks/useTheme";
+import { AppShell } from "./components/AppShell";
+
+// Existing Pages
 import { Landing } from "./pages/Landing";
 import { Dashboard } from "./pages/Dashboard";
 import { ChatPage } from "./pages/ChatPage";
@@ -18,6 +22,7 @@ import { TermsPage } from "./pages/TermsPage";
 import { AcceptTermsPage } from "./pages/AcceptTermsPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TeamPage } from "./pages/TeamPage";
+import { WorkspaceIDE } from "./pages/WorkspaceIDE";
 
 // Ops IDE Imports
 import { OpsLayout } from "./components/OpsLayout";
@@ -25,21 +30,35 @@ import { CognitiveGraphExplorer } from "./modules/cognitive-graph/CognitiveGraph
 import { RetrievalExplainability } from "./modules/retrieval/RetrievalExplainability";
 import { CivilizationReplay } from "./modules/replay/CivilizationReplay";
 
-function App() {
+// Phase B: 13 Primary Section Route Pages
+import { HomePage } from "./pages/HomePage";
+import { ResearchPage } from "./pages/ResearchPage";
+import { MissionsPage } from "./pages/MissionsPage";
+import { WorkspacesPage } from "./pages/WorkspacesPage";
+import { ComputerOperatorPage } from "./pages/ComputerOperatorPage";
+import { IntelligencePage } from "./pages/IntelligencePage";
+import { MemoryPage } from "./pages/MemoryPage";
+import { ToolsPage } from "./pages/ToolsPage";
+import { EngineeringPage } from "./pages/EngineeringPage";
+import { DevicesPage } from "./pages/DevicesPage";
+import { GovernancePage } from "./pages/GovernancePage";
+import { SystemHealthPage } from "./pages/SystemHealthPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
+
+function AppContent() {
   const { session, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-app-bg text-app-text flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#666666] to-white 
-                          flex items-center justify-center shadow-lg shadow-none animate-pulse-soft">
+          <div className="w-12 h-12 rounded-xl bg-app-card border border-app-border flex items-center justify-center shadow-lg animate-pulse-soft">
             <svg
               width="22"
               height="22"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -50,78 +69,83 @@ function App() {
               <path d="M18 9a9 9 0 0 1-9 9" />
             </svg>
           </div>
-          <p className="text-sm text-[#555555] font-medium">Loading...</p>
+          <p className="text-xs font-mono text-app-muted">Initializing Arbor Level 2...</p>
         </div>
       </div>
     );
   }
 
+  const isAuthenticated = Boolean(session?.access_token);
+
+  const renderProtected = (element: React.ReactElement) => {
+    return isAuthenticated ? <AppShell>{element}</AppShell> : <Navigate to="/" replace />;
+  };
+
   return (
     <Router>
       <Routes>
-        {/* Public route */}
+        {/* Public Landing & Product Entry */}
         <Route
           path="/"
-          element={
-            session?.access_token ? <Navigate to="/dashboard" replace /> : <Landing />
-          }
+          element={isAuthenticated ? <Navigate to="/home" replace /> : <Landing />}
         />
+        <Route path="/welcome" element={<Landing />} />
 
-        {/* Protected routes */}
+        {/* 13 Primary Navigation Routes */}
+        <Route path="/home" element={renderProtected(<HomePage />)} />
+        <Route path="/research" element={renderProtected(<ResearchPage />)} />
+        <Route path="/missions" element={renderProtected(<MissionsPage />)} />
+        <Route path="/workspaces" element={renderProtected(<WorkspacesPage />)} />
+        <Route path="/workspace/:id" element={renderProtected(<WorkspaceIDE />)} />
+        <Route path="/workspace" element={renderProtected(<WorkspaceIDE />)} />
+        <Route path="/computer" element={renderProtected(<ComputerOperatorPage />)} />
+        <Route path="/computer-operator" element={renderProtected(<ComputerOperatorPage />)} />
+        <Route path="/intelligence" element={renderProtected(<IntelligencePage />)} />
+        <Route path="/intelligence/compare" element={renderProtected(<CompareBranches />)} />
+        <Route path="/memory" element={renderProtected(<MemoryPage />)} />
         <Route
-          path="/dashboard"
-          element={
-            session?.access_token ? <Dashboard /> : <Navigate to="/" replace />
-          }
+          path="/memory/debugger"
+          element={renderProtected(<OpsLayout><RetrievalExplainability /></OpsLayout>)}
         />
         <Route
-          path="/chat/:conversationId"
-          element={
-            session?.access_token ? <ChatPage /> : <Navigate to="/" replace />
-          }
+          path="/memory/replay"
+          element={renderProtected(<OpsLayout><CivilizationReplay /></OpsLayout>)}
         />
-        <Route
-          path="/settings"
-          element={
-            session?.access_token ? <SettingsPage /> : <Navigate to="/" replace />
-          }
-        />
-        <Route
-          path="/compare"
-          element={
-            session?.access_token ? <CompareBranches /> : <Navigate to="/" replace />
-          }
-        />
+        <Route path="/tools" element={renderProtected(<ToolsPage />)} />
+        <Route path="/engineering" element={renderProtected(<EngineeringPage />)} />
+        <Route path="/devices" element={renderProtected(<DevicesPage />)} />
+        <Route path="/governance" element={renderProtected(<GovernancePage />)} />
+        <Route path="/health" element={renderProtected(<SystemHealthPage />)} />
+        <Route path="/settings" element={renderProtected(<SettingsPage />)} />
+        <Route path="/notifications" element={renderProtected(<NotificationsPage />)} />
 
-        {/* Ops IDE Routes */}
-        <Route path="/ops" element={session?.access_token ? <OpsLayout><Navigate to="/ops/graph" replace /></OpsLayout> : <Navigate to="/" replace />} />
-        <Route path="/ops/graph" element={session?.access_token ? <OpsLayout><CognitiveGraphExplorer /></OpsLayout> : <Navigate to="/" replace />} />
-        <Route path="/ops/retrieval" element={session?.access_token ? <OpsLayout><RetrievalExplainability /></OpsLayout> : <Navigate to="/" replace />} />
-        <Route path="/ops/replay" element={session?.access_token ? <OpsLayout><CivilizationReplay /></OpsLayout> : <Navigate to="/" replace />} />
-
-        {/* Account */}
+        {/* Preserved Predecessor & Secondary Routes */}
+        <Route path="/dashboard" element={renderProtected(<Dashboard />)} />
+        <Route path="/chat/:conversationId" element={renderProtected(<ChatPage />)} />
+        <Route path="/compare" element={renderProtected(<CompareBranches />)} />
         <Route
-          path="/account"
-          element={session?.access_token ? <AccountPage /> : <Navigate to="/" replace />}
+          path="/ops"
+          element={renderProtected(<OpsLayout><Navigate to="/ops/graph" replace /></OpsLayout>)}
         />
+        <Route
+          path="/ops/graph"
+          element={renderProtected(<OpsLayout><CognitiveGraphExplorer /></OpsLayout>)}
+        />
+        <Route
+          path="/ops/retrieval"
+          element={renderProtected(<OpsLayout><RetrievalExplainability /></OpsLayout>)}
+        />
+        <Route
+          path="/ops/replay"
+          element={renderProtected(<OpsLayout><CivilizationReplay /></OpsLayout>)}
+        />
+        <Route path="/account" element={renderProtected(<AccountPage />)} />
+        <Route path="/project/:projectId" element={renderProtected(<ProjectPage />)} />
+        <Route path="/team/:projectId" element={renderProtected(<TeamPage />)} />
 
-        {/* Join via invite — public, handles own auth state */}
+        {/* Public & Legal Gateways */}
         <Route path="/join" element={<JoinPage />} />
-
-        {/* Team project pages */}
-        <Route
-          path="/project/:projectId"
-          element={session?.access_token ? <ProjectPage /> : <Navigate to="/" replace />}
-        />
-        <Route
-          path="/team/:projectId"
-          element={session?.access_token ? <TeamPage /> : <Navigate to="/" replace />}
-        />
-
-        {/* Legal acceptance gate — accessible after OAuth sign-in */}
         <Route path="/accept-terms" element={<AcceptTermsPage />} />
-
-        {/* Static public pages */}
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
 
@@ -129,6 +153,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

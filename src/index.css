@@ -5,9 +5,10 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------
-   THEME TOKENS FOR LANDING PAGE
+   THEME TOKENS — Day/Night Monochrome Design System
    ------------------------------------------------------------ */
-:root, [data-theme="light"] {
+:root, [data-theme="light"], .light {
+  /* Landing page legacy tokens */
   --bg:        #fdfcf9;
   --bg-2:      #f4f2ee;
   --ink:       #111110;
@@ -19,9 +20,31 @@
   --nav-bg:    rgba(253,252,249,0.93);
   --t-track:   #e4e2dc;
   --t-thumb:   #111110;
+
+  /* App Shell Monochrome Tokens — Light/Bright Mode */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9f9fb;
+  --bg-tertiary: #f3f3f5;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f0f4;
+  --bg-active: #e8e8ed;
+  --border-subtle: #f0f0f2;
+  --border-default: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --text-inverted: #fafafa;
+  --accent-primary: #18181b;
+  --accent-inverted: #ffffff;
+  --status-success: #16a34a;
+  --status-warning: #ca8a04;
+  --status-danger: #dc2626;
+  --status-info: #2563eb;
 }
 
-[data-theme="dark"] {
+[data-theme="dark"], .dark {
+  /* Landing page legacy tokens */
   --bg:        #0e0d0b;
   --bg-2:      #161512;
   --ink:       #f0ede8;
@@ -33,6 +56,27 @@
   --nav-bg:    rgba(14,13,11,0.93);
   --t-track:   #2a2926;
   --t-thumb:   #f0ede8;
+
+  /* App Shell Monochrome Tokens — Dark Mode */
+  --bg-primary: #09090b;
+  --bg-secondary: #121215;
+  --bg-tertiary: #18181c;
+  --bg-card: #141418;
+  --bg-hover: #1e1e24;
+  --bg-active: #272730;
+  --border-subtle: #1c1c22;
+  --border-default: #27272a;
+  --border-strong: #3f3f46;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-inverted: #09090b;
+  --accent-primary: #f4f4f5;
+  --accent-inverted: #09090b;
+  --status-success: #4ade80;
+  --status-warning: #facc15;
+  --status-danger: #f87171;
+  --status-info: #60a5fa;
 }
 
 /* ============================================================
@@ -54,10 +98,11 @@
 
   body {
     font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0a0a0a;
-    color: #ffffff;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {

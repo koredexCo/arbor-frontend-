@@ -3,6 +3,7 @@ export interface Conversation {
   user_id: string;
   project_id: string | null;
   title: string;
+  active_branch_id?: string | null;
   created_at: string;
   updated_at?: string;
   deleted_at?: string | null;
@@ -17,23 +18,45 @@ export interface Branch {
   summary: string | null;
   depth: number;
   is_active?: boolean;
+  token_budget?: number;
+  version?: number;
+  workspace_id?: string | null;
   model_id: string | null;
   origin_preview?: string | null;
   created_at: string;
 }
+
+export type NodeType =
+  | "message"
+  | "model_call"
+  | "branch"
+  | "agent_plan"
+  | "tool_call"
+  | "tool_result"
+  | "mcp_call"
+  | "file_change"
+  | "terminal_execution"
+  | "test_result"
+  | "compiler_action"
+  | "research_source"
+  | "artifact"
+  | "decision";
 
 export interface Message {
   id: string;
   conversation_id: string;
   branch_id: string;
   parent_id: string | null;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
+  node_type?: NodeType | string;
   sequence: number;
   is_pinned: boolean;
   metadata?: Record<string, unknown>;
   created_at: string;
 }
+
+export * from "./agent";
 
 export interface Source {
   id: string;
@@ -133,4 +156,21 @@ export interface Model {
   name: string;
   provider: string;
   capabilities: string[];
+}
+
+export interface WorkspaceResponse {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  visibility: "private" | "workspace" | "shared" | "public_readonly";
+  created_at: string;
+  role?: "owner" | "admin" | "member" | "viewer";
+}
+
+export interface WorkspaceMemberResponse {
+  workspace_id: string;
+  user_id: string;
+  role: "owner" | "admin" | "member" | "viewer";
+  joined_at: string;
 }
