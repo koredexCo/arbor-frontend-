@@ -17,7 +17,13 @@
  * - Decoupled verification outcomes
  */
 
-import { resolveStatusPresentation, type SimpleMissionPayload } from "../services/orchestratorApi";
+import {
+  resolveStatusPresentation,
+  executeSimpleMissionStep,
+  approveMissionRequest,
+  rejectMissionRequest,
+  type SimpleMissionPayload,
+} from "../services/orchestratorApi";
 
 // Browser-safe, standalone assertion utilities (no Node-specific globals required)
 const assert = {
@@ -150,6 +156,50 @@ function processResearchPromotion(provenance?: ProvenanceData) {
   return { isFlagged: false, warning: null };
 }
 
+// Mocked-fetch harness for the real execute_simple / approvals / verify-seal contract.
+// Each entry in `responses` is consumed in order by one fetch() call; `calls` records
+// every (url, init) pair the code under test actually issued, for header/body assertions.
+interface MockedResponse {
+  status: number;
+  statusText?: string;
+  body: unknown;
+}
+
+interface MockFetchCall {
+  url: string;
+  init?: RequestInit;
+}
+
+function installMockFetch(responses: MockedResponse[]): { calls: MockFetchCall[]; restore: () => void } {
+  const originalFetch = globalThis.fetch;
+  const calls: MockFetchCall[] = [];
+  let cursor = 0;
+
+  const mockFetch = (async (url: string, init?: RequestInit) => {
+    calls.push({ url, init });
+    const scripted = responses[cursor++];
+    if (!scripted) {
+      throw new Error(`Mock fetch invoked more times (call #${cursor}) than scripted (${responses.length})`);
+    }
+    const bodyText = typeof scripted.body === "string" ? scripted.body : JSON.stringify(scripted.body);
+    return {
+      ok: scripted.status >= 200 && scripted.status < 300,
+      status: scripted.status,
+      statusText: scripted.statusText ?? "",
+      text: async () => bodyText,
+      json: async () => JSON.parse(bodyText),
+    } as unknown as Response;
+  }) as unknown as typeof fetch;
+
+  globalThis.fetch = mockFetch;
+  return {
+    calls,
+    restore: () => {
+      globalThis.fetch = originalFetch;
+    },
+  };
+}
+
 // Run the verification battery
 async function runBattery() {
   console.log("============================================================");
@@ -159,10 +209,10 @@ async function runBattery() {
   let passed = 0;
   let total = 0;
 
-  function test(name: string, fn: () => void | Promise<void>) {
+  async function test(name: string, fn: () => void | Promise<void>) {
     total++;
     try {
-      fn();
+      await fn();
       console.log(`  ✓ TEST-${total.toString().padStart(2, "0")}: ${name}`);
       passed++;
     } catch (err: any) {
@@ -173,7 +223,7 @@ async function runBattery() {
   }
 
   // 1. DAG Kahn Sort on Nominal Nominal Graph
-  test("DAG Topology: Nominal 6-step DAG resolves Kahn topological sequence without cycles", () => {
+  await test("DAG Topology: Nominal 6-step DAG resolves Kahn topological sequence without cycles", () => {
     const steps = [
       { step_id: "step_1", depends_on: [] },
       { step_id: "step_2", depends_on: ["step_1"] },
@@ -190,7 +240,7 @@ async function runBattery() {
   });
 
   // 2. DAG Cycle Detection
-  test("DAG Topology: Cyclic dependency rejection (INV-M2-001)", () => {
+  await test("DAG Topology: Cyclic dependency rejection (INV-M2-001)", () => {
     const cyclicSteps = [
       { step_id: "step_a", depends_on: ["step_c"] },
       { step_id: "step_b", depends_on: ["step_a"] },
@@ -201,7 +251,7 @@ async function runBattery() {
   });
 
   // 3. Multi-Parent DAG Diamond Resolution
-  test("DAG Topology: Diamond dependencies resolve correct topological depth", () => {
+  await test("DAG Topology: Diamond dependencies resolve correct topological depth", () => {
     const diamondSteps = [
       { step_id: "root", depends_on: [] },
       { step_id: "left", depends_on: ["root"] },
@@ -218,7 +268,7 @@ async function runBattery() {
   });
 
   // 4. Missing Dependencies Handled Gracefully
-  test("DAG Topology: Unknown dependencies ignored without breaking topological sort", () => {
+  await test("DAG Topology: Unknown dependencies ignored without breaking topological sort", () => {
     const stepsWithGhostDep = [
       { step_id: "step_1", depends_on: ["non_existent_step"] },
       { step_id: "step_2", depends_on: ["step_1"] },
@@ -229,7 +279,7 @@ async function runBattery() {
   });
 
   // 5. Incomplete / Linear Sequence Fallback
-  test("DAG Incomplete Data: Steps without depends_on fall back to linear sequence", () => {
+  await test("DAG Incomplete Data: Steps without depends_on fall back to linear sequence", () => {
     const linearSteps: Array<{ step_id: string; depends_on?: string[] }> = [
       { step_id: "s1" },
       { step_id: "s2" },
@@ -240,7 +290,7 @@ async function runBattery() {
   });
 
   // 6. Multi-Tenant Workspace Isolation Enforcement
-  test("Workspace Isolation: Cross-workspace access throws fail-closed 403 (INV-M2-004)", () => {
+  await test("Workspace Isolation: Cross-workspace access throws fail-closed 403 (INV-M2-004)", () => {
     const currentWorkspace = "ws-tenant-alpha";
     const foreignWorkspace = "ws-tenant-beta";
     assert.throws(
@@ -250,13 +300,13 @@ async function runBattery() {
   });
 
   // 7. Legitimate Workspace Access Permitted
-  test("Workspace Isolation: Same-workspace access succeeds", () => {
+  await test("Workspace Isolation: Same-workspace access succeeds", () => {
     const currentWorkspace = "ws-tenant-alpha";
     assert.doesNotThrow(() => assertWorkspaceBoundary(currentWorkspace, "ws-tenant-alpha"));
   });
 
   // 8. Research-to-Mission Provenance: Synthetic Demonstration Flagged
-  test("Research Provenance: Synthetic demonstration research flags security warning", () => {
+  await test("Research Provenance: Synthetic demonstration research flags security warning", () => {
     const result = processResearchPromotion({
       researchSessionId: "res-demo-42",
       isSyntheticDemonstration: true,
@@ -267,7 +317,7 @@ async function runBattery() {
   });
 
   // 9. Research-to-Mission Provenance: Verified Live Evidence Passes
-  test("Research Provenance: Verified live evidence passes without synthetic warning", () => {
+  await test("Research Provenance: Verified live evidence passes without synthetic warning", () => {
     const result = processResearchPromotion({
       researchSessionId: "res-live-101",
       isSyntheticDemonstration: false,
@@ -278,7 +328,7 @@ async function runBattery() {
   });
 
   // 10. Status Taxonomy Integrity
-  test("Status Integrity: Only authoritative backend statuses are supported", () => {
+  await test("Status Integrity: Only authoritative backend statuses are supported", () => {
     const validStatuses = new Set([
       "QUEUED",
       "RUNNING",
@@ -301,7 +351,7 @@ async function runBattery() {
   });
 
   // 11. Decoupled Verification Outcome
-  test("Evidence Integrity: Execution completion decoupled from verification satisfaction", () => {
+  await test("Evidence Integrity: Execution completion decoupled from verification satisfaction", () => {
     interface EvaluationInput {
       executionStatus: string;
       failedChecks: string[];
@@ -331,7 +381,7 @@ async function runBattery() {
   });
 
   // 12. Ed25519 MRR Seal Contract
-  test("Cryptographic Attestation: MRR Ed25519 signature structure validation (INV-P7-017)", () => {
+  await test("Cryptographic Attestation: MRR Ed25519 signature structure validation (INV-P7-017)", () => {
     const validateMRRSeal = (seal: any) => {
       if (!seal || typeof seal !== "object") throw new Error("Seal must be an object");
       if (seal.algorithm !== "ed25519") throw new Error("Algorithm must be ed25519");
@@ -356,7 +406,7 @@ async function runBattery() {
   });
 
   // 13. Cancellation Idempotency
-  test("Mission Controls: Cancellation payload requires workspace_id and job_id", () => {
+  await test("Mission Controls: Cancellation payload requires workspace_id and job_id", () => {
     const cancelPayload = {
       workspace_id: "ws-primary-sandbox",
       job_id: "job-orch-9912",
@@ -367,7 +417,7 @@ async function runBattery() {
   });
 
   // 14. Mandatory Human CAS Gating Contract
-  test("Security Invariant: Critical modifying steps enforce CAS requirement (INV-M2-005)", () => {
+  await test("Security Invariant: Critical modifying steps enforce CAS requirement (INV-M2-005)", () => {
     const evaluateStepCASRequirement = (step: { tool_name?: string; action?: string; risk_level?: string }) => {
       const mutatingTools = new Set(["fs.write", "fs.replace", "fs.delete", "terminal.exec", "compiler.transpile"]);
       if (step.tool_name && mutatingTools.has(step.tool_name)) return true;
@@ -387,7 +437,7 @@ async function runBattery() {
   });
 
   // 15. Offline Network Disconnection Fail-Closed
-  test("Network Disconnection: Connection refusal generates clear offline error without fake success", () => {
+  await test("Network Disconnection: Connection refusal generates clear offline error without fake success", () => {
     const networkError = new Error("Failed to fetch");
     const isOffline = networkError.message.includes("Failed to fetch");
     assert.strictEqual(isOffline, true);
@@ -397,7 +447,7 @@ async function runBattery() {
   });
 
   // 16. TEST-FE-01: Known Database States Resolve to Correct Status Badges
-  test("TEST-FE-01: Known database states resolve to correct status badges", () => {
+  await test("TEST-FE-01: Known database states resolve to correct status badges", () => {
     const completed = resolveStatusPresentation("COMPLETED");
     assert.strictEqual(completed.status, "COMPLETED");
     assert.strictEqual(completed.variant, "success");
@@ -429,7 +479,7 @@ async function runBattery() {
   });
 
   // 17. TEST-FE-02: Unrecognized Future State Safe Fallback to UNKNOWN
-  test("TEST-FE-02: Unrecognized future state string resolves safely to UNKNOWN without exceptions", () => {
+  await test("TEST-FE-02: Unrecognized future state string resolves safely to UNKNOWN without exceptions", () => {
     const unknown1 = resolveStatusPresentation("FUTURE_QUANTUM_DISPATCHED");
     assert.strictEqual(unknown1.status, "UNKNOWN");
     assert.strictEqual(unknown1.variant, "secondary");
@@ -443,7 +493,7 @@ async function runBattery() {
   });
 
   // 18. TEST-FE-03: Status Filter Dropdown Supports Authoritative States
-  test("TEST-FE-03: Status filter supports authoritative state taxonomy", () => {
+  await test("TEST-FE-03: Status filter supports authoritative state taxonomy", () => {
     const missions = [
       { id: "m1", status: "COMPLETED" },
       { id: "m2", status: "RUNNING" },
@@ -467,7 +517,7 @@ async function runBattery() {
   });
 
   // 19. TEST-FE-04: executeSimpleMission Request Serialization and Authorization Contract
-  test("TEST-FE-04: SimpleMissionPayload properly serializes request with mandatory and optional parameters", () => {
+  await test("TEST-FE-04: SimpleMissionPayload properly serializes request with mandatory and optional parameters", () => {
     const payload: SimpleMissionPayload = {
       workspace_id: "ws-test-alpha",
       user_objective: "Execute bounded test action",
@@ -493,7 +543,7 @@ async function runBattery() {
   });
 
   // 20. TEST-FE-05: Reconciliation Distinction and Retry Action Guard (INV-P7-020)
-  test("TEST-FE-05: Reconciliation distinction and retry action guard (INV-P7-020)", () => {
+  await test("TEST-FE-05: Reconciliation distinction and retry action guard (INV-P7-020)", () => {
     // 1. Backend RECONCILING state maps to RECOVERING badge with amber/warning variant
     const reconciling = resolveStatusPresentation("RECONCILING");
     assert.strictEqual(reconciling.status, "RECOVERING");
@@ -521,7 +571,7 @@ async function runBattery() {
   });
 
   // 21. TEST-FE-06: BOLA Workspace Query Guard for Mission Status (INV-M2-004)
-  test("TEST-FE-06: BOLA workspace parameter verification for GET /api/v1/missions/{id} (INV-M2-004)", () => {
+  await test("TEST-FE-06: BOLA workspace parameter verification for GET /api/v1/missions/{id} (INV-M2-004)", () => {
     // Assert that cross-workspace status retrieval fails closed
     const currentWorkspaceId: string = "ws-tenant-alice";
     const requestedWorkspaceId: string = "ws-tenant-bob";
@@ -535,7 +585,7 @@ async function runBattery() {
   });
 
   // 22. TEST-FE-07: Cancellation Response Confirmed Flag Contract
-  test("TEST-FE-07: Cancellation response contract requires boolean confirmed flag", () => {
+  await test("TEST-FE-07: Cancellation response contract requires boolean confirmed flag", () => {
     interface CancelJobResponse {
       cancelled: boolean;
       confirmed: boolean;
@@ -562,9 +612,261 @@ async function runBattery() {
     assert.strictEqual(unconfirmedAck.confirmed, false);
   });
 
+  // 23. Real Mission Flow: full 412 -> approve -> resume -> 200 happy path
+  await test("Real Mission Flow: 412 approval -> approve -> resume -> 200 success", async () => {
+    const workspaceId = "ws-mission-runner";
+    const approvalBody = {
+      detail: {
+        mission_id: "mission-abc",
+        request_id: "req-1",
+        tool_name: "fs.write",
+        parameters: { path: "notes.txt", content: "fixed typo" },
+        plan_preview: [
+          { step_id: "step_1", status: "completed", action: "read_file", parameters: {} },
+          { step_id: "step_2", status: "awaiting_approval", action: "write_file", parameters: { path: "notes.txt" } },
+        ],
+        reviewer: { verdict: "approve_recommended", status: "reviewed" },
+      },
+    };
+    const finalBody = {
+      mission_id: "mission-abc",
+      status: "COMPLETED",
+      lifecycle_state: "SEALED",
+      reconciliation_required: false,
+      step_results: [
+        { step_id: "step_1", tool_name: "fs.read", status: "completed", exit_code: 0 },
+        { step_id: "step_2", tool_name: "fs.write", status: "completed", exit_code: 0 },
+      ],
+    };
+
+    const { calls, restore } = installMockFetch([
+      { status: 412, body: approvalBody },
+      { status: 200, body: { token_id: "tok-xyz" } },
+      { status: 200, body: finalBody },
+    ]);
+
+    try {
+      const firstOutcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Fix the typo in notes.txt",
+        client_request_id: "req-client-1",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(firstOutcome.kind, "approval_required");
+      if (firstOutcome.kind !== "approval_required") throw new Error("unreachable");
+      assert.strictEqual(firstOutcome.detail.request_id, "req-1");
+      assert.strictEqual(firstOutcome.detail.plan_preview?.length, 2);
+      assert.strictEqual(firstOutcome.detail.plan_preview?.[1].status, "awaiting_approval");
+
+      const approveResp = await approveMissionRequest(firstOutcome.detail.request_id, workspaceId, "approved via UI");
+      assert.strictEqual(approveResp.token_id, "tok-xyz");
+
+      const resumedOutcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Fix the typo in notes.txt",
+        client_request_id: "req-client-1",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+        cas_token_id: approveResp.token_id,
+      });
+      assert.strictEqual(resumedOutcome.kind, "success");
+      if (resumedOutcome.kind !== "success") throw new Error("unreachable");
+      assert.strictEqual(resumedOutcome.data.status, "COMPLETED");
+      assert.strictEqual(resumedOutcome.data.step_results?.length, 2);
+
+      // Same client_request_id reused across the whole run, exactly as the reference
+      // client (arbor-run.ps1) does; the approve call must carry the real reason text,
+      // and the resume call must carry the real cas_token_id from the approve response.
+      const firstCallBody = JSON.parse(String(calls[0].init?.body));
+      const resumeCallBody = JSON.parse(String(calls[2].init?.body));
+      assert.strictEqual(firstCallBody.client_request_id, resumeCallBody.client_request_id);
+      assert.strictEqual(resumeCallBody.cas_token_id, "tok-xyz");
+      const approveCallBody = JSON.parse(String(calls[1].init?.body));
+      assert.strictEqual(approveCallBody.reason, "approved via UI");
+      assert.match(calls[1].url, /\/api\/v1\/approvals\/req-1\/approve$/);
+
+      // X-Workspace-ID must be attached to every call, matching the reference client.
+      const firstCallHeaders = calls[0].init?.headers as Headers;
+      assert.strictEqual(firstCallHeaders.get("X-Workspace-ID"), workspaceId);
+    } finally {
+      restore();
+    }
+  });
+
+  // 24. Real Mission Flow: reject path via the real reject endpoint, run stops
+  await test("Real Mission Flow: Reject stops the run via the real reject endpoint", async () => {
+    const workspaceId = "ws-mission-runner";
+    const approvalBody = {
+      detail: {
+        mission_id: "mission-def",
+        request_id: "req-2",
+        tool_name: "terminal.exec",
+        parameters: { command: "rm -rf build/" },
+        plan_preview: [
+          { step_id: "step_1", status: "awaiting_approval", action: "run_command", parameters: { command: "rm -rf build/" } },
+        ],
+        reviewer: { verdict: "needs_review", status: "reviewed" },
+      },
+    };
+    const { calls, restore } = installMockFetch([
+      { status: 412, body: approvalBody },
+      { status: 200, body: { status: "rejected" } },
+    ]);
+
+    try {
+      const outcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Clean the build directory",
+        client_request_id: "req-client-2",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome.kind, "approval_required");
+      if (outcome.kind !== "approval_required") throw new Error("unreachable");
+
+      await rejectMissionRequest(outcome.detail.request_id, workspaceId, "declined via UI");
+
+      // Exactly two calls: the initial execute_simple 412, then the reject -- no resume
+      // execute_simple call is ever made after a reject.
+      assert.strictEqual(calls.length, 2);
+      assert.match(calls[1].url, /\/api\/v1\/approvals\/req-2\/reject$/);
+      const rejectBody = JSON.parse(String(calls[1].init?.body));
+      assert.strictEqual(rejectBody.reason, "declined via UI");
+    } finally {
+      restore();
+    }
+  });
+
+  // 25. Real Mission Flow: resuming after one approval can raise a second, distinct 412
+  await test("Real Mission Flow: A second 412 after resume loops back to a new approval card", async () => {
+    const workspaceId = "ws-mission-runner";
+    const firstApproval = {
+      detail: {
+        mission_id: "mission-ghi",
+        request_id: "req-3a",
+        tool_name: "fs.write",
+        parameters: { path: "a.txt" },
+        plan_preview: [
+          { step_id: "step_1", status: "awaiting_approval", action: "write_file", parameters: { path: "a.txt" } },
+          { step_id: "step_2", status: "pending", action: "write_file", parameters: { path: "b.txt" } },
+        ],
+      },
+    };
+    const secondApproval = {
+      detail: {
+        mission_id: "mission-ghi",
+        request_id: "req-3b",
+        tool_name: "fs.write",
+        parameters: { path: "b.txt" },
+        plan_preview: [
+          { step_id: "step_1", status: "completed", action: "write_file", parameters: { path: "a.txt" } },
+          { step_id: "step_2", status: "awaiting_approval", action: "write_file", parameters: { path: "b.txt" } },
+        ],
+      },
+    };
+    const { restore } = installMockFetch([
+      { status: 412, body: firstApproval },
+      { status: 200, body: { token_id: "tok-1" } },
+      { status: 412, body: secondApproval },
+    ]);
+
+    try {
+      const outcome1 = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Write two files",
+        client_request_id: "req-client-3",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome1.kind, "approval_required");
+      if (outcome1.kind !== "approval_required") throw new Error("unreachable");
+      assert.strictEqual(outcome1.detail.request_id, "req-3a");
+
+      const approveResp = await approveMissionRequest(outcome1.detail.request_id, workspaceId);
+
+      const outcome2 = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Write two files",
+        client_request_id: "req-client-3",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+        cas_token_id: approveResp.token_id,
+      });
+      assert.strictEqual(outcome2.kind, "approval_required");
+      if (outcome2.kind !== "approval_required") throw new Error("unreachable");
+      assert.strictEqual(outcome2.detail.request_id, "req-3b");
+      assert.notStrictEqual(outcome1.detail.request_id, outcome2.detail.request_id);
+      assert.strictEqual(outcome2.detail.plan_preview?.[0].status, "completed");
+    } finally {
+      restore();
+    }
+  });
+
+  // 26. Real Mission Flow: non-412 error surfaces the status code and detail verbatim
+  await test("Real Mission Flow: Non-412 errors surface the status code and detail verbatim (PLAN_INVALID 422)", async () => {
+    const workspaceId = "ws-mission-runner";
+    const { restore } = installMockFetch([{ status: 422, body: { detail: "PLAN_INVALID" } }]);
+    try {
+      const outcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Do something impossible",
+        client_request_id: "req-client-4",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome.kind, "error");
+      if (outcome.kind !== "error") throw new Error("unreachable");
+      assert.strictEqual(outcome.status, 422);
+      assert.strictEqual(outcome.detailText, "PLAN_INVALID");
+    } finally {
+      restore();
+    }
+  });
+
+  // 27. Real Mission Flow: a terminal FAILED response carries the mission_failure_record
+  await test("Real Mission Flow: Terminal FAILED response surfaces the mission_failure_record for rendering", async () => {
+    const workspaceId = "ws-mission-runner";
+    const finalBody = {
+      mission_id: "mission-jkl",
+      status: "FAILED",
+      lifecycle_state: "FAILED",
+      reconciliation_required: false,
+      step_results: [{ step_id: "step_1", tool_name: "terminal.exec", status: "failed", exit_code: 1 }],
+      not_executed_steps: [{ step_id: "step_2", action: "write_report" }],
+      mission_failure_record: {
+        failed_step_id: "step_1",
+        failed_tool_name: "terminal.exec",
+        exit_code: 1,
+        output_tail: "Traceback (most recent call last):\n  ...\nValueError: boom",
+      },
+    };
+    const { restore } = installMockFetch([{ status: 200, body: finalBody }]);
+    try {
+      const outcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Run the flaky script",
+        client_request_id: "req-client-5",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome.kind, "success");
+      if (outcome.kind !== "success") throw new Error("unreachable");
+      assert.strictEqual(outcome.data.status, "FAILED");
+      assert.ok(outcome.data.mission_failure_record);
+      assert.strictEqual(outcome.data.mission_failure_record?.failed_step_id, "step_1");
+      assert.strictEqual(outcome.data.mission_failure_record?.failed_tool_name, "terminal.exec");
+      assert.strictEqual(outcome.data.mission_failure_record?.exit_code, 1);
+      assert.match(outcome.data.mission_failure_record?.output_tail || "", /ValueError: boom/);
+      assert.strictEqual(outcome.data.not_executed_steps?.[0].step_id, "step_2");
+    } finally {
+      restore();
+    }
+  });
+
   console.log("============================================================");
   console.log(`BATTERY COMPLETE: ${passed}/${total} test specifications passed.`);
   console.log("============================================================");
 }
 
-runBattery();
+await runBattery();
