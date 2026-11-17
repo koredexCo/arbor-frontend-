@@ -34,6 +34,44 @@ async function fetchWithAuth(path: string, options: RequestInit = {}) {
 }
 
 /**
+ * Raw fetch used by the real mission-execution contract (execute_simple, approvals,
+ * verify-seal). Unlike fetchWithAuth, this never throws on a non-2xx response -- callers
+ * need to see 412 (approval required) and other error statuses to drive the approval loop
+ * and show the real backend error verbatim, rather than having them collapsed into a thrown
+ * Error. Always attaches X-Workspace-ID, matching the reference client contract in
+ * arbor-backend/backend/scripts/dev/arbor-run.ps1.
+ */
+async function fetchOrchestratorRaw(
+  path: string,
+  options: RequestInit,
+  workspaceId: string
+): Promise<Response> {
+  let token = "";
+  try {
+    const { getAccessToken } = await import("./api");
+    token = await getAccessToken();
+  } catch {
+    // In local dev mode or offline
+  }
+
+  const headers = new Headers(options.headers || {});
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (!headers.has("X-Workspace-ID") && workspaceId) {
+    headers.set("X-Workspace-ID", workspaceId);
+  }
+
+  return fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+}
+
+/**
  * Authoritative Mission Lifecycle Statuses as defined by Milestone 2 & Stage 6 contracts.
  */
 export type AuthoritativeMissionStatus =
@@ -54,6 +92,7 @@ export interface SimpleMissionPayload {
   client_request_id: string;
   cas_token_id?: string;
   timeout_seconds?: number;
+  enable_two_stage_planning?: boolean;
   target_file?: string;
   model_id?: string;
   provider?: string;
@@ -530,5 +569,194 @@ export async function getMissionStatus(
     method: "GET",
   });
 
+  return await res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Real execute_simple contract: HTTP 412 CAS approval loop, approve/reject,
+// and verify-seal. Mirrors arbor-backend/backend/scripts/dev/arbor-run.ps1,
+// the live-verified reference client for this API.
+// ---------------------------------------------------------------------------
+
+export interface MissionPlanPreviewStep {
+  step_id: string;
+  status: string;
+  action: string;
+  parameters?: Record<string, unknown> | null;
+}
+
+export interface MissionApprovalReviewer {
+  verdict?: string;
+  status?: string;
+}
+
+/**
+ * Body of an HTTP 412 response from execute_simple: a step is awaiting human CAS approval.
+ * Some backends wrap this in a top-level {detail: ...}; others return it as the top-level
+ * object directly, so callers should treat `detail` as already unwrapped.
+ */
+export interface MissionApprovalDetail {
+  mission_id: string;
+  request_id: string;
+  tool_name?: string;
+  parameters?: Record<string, unknown> | null;
+  plan_preview?: MissionPlanPreviewStep[];
+  reviewer?: MissionApprovalReviewer;
+}
+
+export interface MissionStepResult {
+  step_id: string;
+  tool_name?: string;
+  status: string;
+  exit_code?: number | null;
+}
+
+export interface MissionNotExecutedStep {
+  step_id: string;
+  action?: string;
+}
+
+export interface MissionFailureRecord {
+  failed_step_id?: string;
+  failed_tool_name?: string;
+  exit_code?: number | null;
+  output_tail?: string;
+}
+
+export interface ExecuteSimpleFinalResponse {
+  mission_id: string;
+  status: string;
+  lifecycle_state: string;
+  reconciliation_required?: boolean;
+  cancellation_reason?: string | null;
+  step_results?: MissionStepResult[];
+  not_executed_steps?: MissionNotExecutedStep[];
+  mission_failure_record?: MissionFailureRecord | null;
+}
+
+export type ExecuteSimpleOutcome =
+  | { kind: "success"; data: ExecuteSimpleFinalResponse }
+  | { kind: "approval_required"; detail: MissionApprovalDetail }
+  | { kind: "error"; status: number; detailText: string };
+
+/**
+ * Submits (or resumes, with cas_token_id set) one execute_simple attempt and classifies
+ * the raw HTTP response, WITHOUT throwing on 412 or other non-2xx statuses -- callers need
+ * to see those to drive the approval loop and show the real backend error verbatim.
+ */
+export async function executeSimpleMissionStep(
+  payload: SimpleMissionPayload
+): Promise<ExecuteSimpleOutcome> {
+  assertWorkspaceMatch(payload.workspace_id);
+
+  const res = await fetchOrchestratorRaw(
+    "/api/v1/missions/execute_simple",
+    { method: "POST", body: JSON.stringify(payload) },
+    payload.workspace_id
+  );
+
+  const bodyText = await res.text().catch(() => "");
+
+  if (res.status === 412) {
+    let parsed: unknown = {};
+    try {
+      parsed = bodyText ? JSON.parse(bodyText) : {};
+    } catch {
+      parsed = {};
+    }
+    const wrapper = parsed as { detail?: MissionApprovalDetail };
+    const detail = wrapper.detail ?? (parsed as MissionApprovalDetail);
+    return { kind: "approval_required", detail };
+  }
+
+  if (!res.ok) {
+    let detailText = bodyText || res.statusText;
+    try {
+      const parsed = bodyText ? JSON.parse(bodyText) : null;
+      if (parsed && typeof parsed === "object" && "detail" in parsed) {
+        const d = (parsed as { detail: unknown }).detail;
+        detailText = typeof d === "string" ? d : JSON.stringify(d);
+      }
+    } catch {
+      // Not JSON -- show the raw body verbatim.
+    }
+    return { kind: "error", status: res.status, detailText };
+  }
+
+  const data = bodyText ? JSON.parse(bodyText) : {};
+  return { kind: "success", data };
+}
+
+export interface MissionApprovalActionResponse {
+  token_id?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * POST /api/v1/approvals/{request_id}/approve. Resolves to the token_id needed to resume
+ * execute_simple as cas_token_id. Never call this without a deliberate user click.
+ */
+export async function approveMissionRequest(
+  requestId: string,
+  workspaceId: string,
+  reason: string = "approved via UI"
+): Promise<MissionApprovalActionResponse> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/approvals/${encodeURIComponent(requestId)}/approve`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+    workspaceId
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Approval API Error (${res.status}): ${text || res.statusText}`);
+  }
+  return await res.json();
+}
+
+/**
+ * POST /api/v1/approvals/{request_id}/reject.
+ */
+export async function rejectMissionRequest(
+  requestId: string,
+  workspaceId: string,
+  reason: string = "declined via UI"
+): Promise<MissionApprovalActionResponse> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/approvals/${encodeURIComponent(requestId)}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+    workspaceId
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Rejection API Error (${res.status}): ${text || res.statusText}`);
+  }
+  return await res.json();
+}
+
+export interface MissionVerifySealResponse {
+  signature_valid: boolean;
+  step_count?: number;
+  final_link_hash?: string;
+  has_mission_failure_record?: boolean;
+  [key: string]: unknown;
+}
+
+/**
+ * GET /api/v1/missions/{mission_id}/verify-seal?workspace_id=...
+ */
+export async function verifyMissionSeal(
+  missionId: string,
+  workspaceId: string
+): Promise<MissionVerifySealResponse> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/missions/${encodeURIComponent(missionId)}/verify-seal?workspace_id=${encodeURIComponent(workspaceId)}`,
+    { method: "GET" },
+    workspaceId
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Verify-Seal API Error (${res.status}): ${text || res.statusText}`);
+  }
   return await res.json();
 }
