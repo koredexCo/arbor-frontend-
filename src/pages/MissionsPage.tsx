@@ -34,17 +34,15 @@ import { OfflineBanner } from "../components/common/OfflineBanner";
 import { ExecutionGraphView } from "../components/missions/ExecutionGraphView";
 import { StepRunbookDrawer } from "../components/missions/StepRunbookDrawer";
 import { CreateMissionModal } from "../components/chat/CreateMissionModal";
-import { PermissionApprovalModal, type PermissionRequest } from "../components/PermissionApprovalModal";
+import { MissionRunnerModal } from "../components/missions/MissionRunnerModal";
 import {
   getWorkspaceMissions,
   fetchWorkspaceMissions,
   getMissionById,
   saveWorkspaceMission,
   cancelMissionJob,
-  approveMissionReplan,
   type MissionRecord,
   type AuthoritativeMissionStatus,
-  type PlanStepData,
 } from "../services/orchestratorApi";
 import {
   getAuthoritativeWorkspaceId,
@@ -82,10 +80,9 @@ export const MissionsPage: React.FC = () => {
 
   // Modals & Action Controls
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showMissionRunnerModal, setShowMissionRunnerModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [pendingApprovalStep, setPendingApprovalStep] = useState<PlanStepData | null>(null);
 
   const { models } = useModels();
   const { branches, activeBranchId } = useBranch();
@@ -252,53 +249,6 @@ export const MissionsPage: React.FC = () => {
     }
   };
 
-  // CAS Gating Human Approval Trigger
-  const handleOpenCASApproval = (stepId: string) => {
-    if (!activeMission || !activeMission.plan) return;
-    const step = activeMission.plan.steps.find((s) => s.step_id === stepId);
-    if (step) {
-      setPendingApprovalStep(step);
-      setShowApprovalModal(true);
-    }
-  };
-
-  const handleConfirmCASApproval = async () => {
-    if (!activeMission || !pendingApprovalStep) return;
-
-    try {
-      // Mock / actual cryptographic approval token submission
-      const token = `cas_token_${Math.random().toString(36).substring(2, 10)}`;
-      if (activeMission.graph_id) {
-        await approveMissionReplan({
-          workspace_id: activeWorkspaceId,
-          graph_id: activeMission.graph_id,
-          approval_token: token,
-        });
-      }
-
-      // Mark step approved in UI
-      const updatedSteps = (activeMission.plan?.steps || []).map((s) =>
-        s.step_id === pendingApprovalStep.step_id
-          ? { ...s, status: "completed" as const, output: "Human CAS Authorization Signed & Consumed." }
-          : s
-      );
-
-      const updatedMission: MissionRecord = {
-        ...activeMission,
-        plan: activeMission.plan ? { ...activeMission.plan, steps: updatedSteps } : null,
-        status: "RUNNING",
-        updated_at: new Date().toISOString(),
-      };
-
-      saveWorkspaceMission(updatedMission);
-      setMissions(getWorkspaceMissions(activeWorkspaceId));
-      setShowApprovalModal(false);
-      setPendingApprovalStep(null);
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to consume CAS approval");
-    }
-  };
-
   const getStatusBadge = (status: AuthoritativeMissionStatus) => {
     switch (status) {
       case "COMPLETED":
@@ -391,6 +341,15 @@ export const MissionsPage: React.FC = () => {
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Create Mission</span>
+          </button>
+
+          <button
+            onClick={() => setShowMissionRunnerModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-app-secondary border border-app-border text-app-text text-xs font-medium hover:border-app-strong transition-colors"
+            title="Run a mission synchronously via execute_simple, with live CAS approval"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Execute Mission</span>
           </button>
         </div>
       </div>
@@ -536,7 +495,6 @@ export const MissionsPage: React.FC = () => {
                   <StepRunbookDrawer
                     step={activeStep}
                     onClose={() => setSelectedStepId(null)}
-                    onApproveCAS={handleOpenCASApproval}
                   />
                 ) : (
                   <div className="p-6 bg-app-card border border-app-border rounded-xl text-center space-y-2 h-[540px] flex flex-col items-center justify-center text-app-muted text-xs">
@@ -925,26 +883,13 @@ export const MissionsPage: React.FC = () => {
         }}
       />
 
-      {/* CAS Human Approval Modal */}
-      {showApprovalModal && pendingApprovalStep && (
-        <PermissionApprovalModal
-          isOpen={showApprovalModal}
-          request={{
-            toolName: pendingApprovalStep.tool_name || pendingApprovalStep.action,
-            command: JSON.stringify(pendingApprovalStep.tool_params || {}),
-            riskTier: "critical",
-            dangerWarning:
-              "This step requires cryptographic CAS signoff before mutating files or compiling binaries on the host system.",
-            reason: pendingApprovalStep.description,
-          }}
-          onApproveOnce={handleConfirmCASApproval}
-          onApproveSession={handleConfirmCASApproval}
-          onDeny={() => {
-            setShowApprovalModal(false);
-            setPendingApprovalStep(null);
-          }}
-        />
-      )}
+      {/* Real execute_simple Mission Runner: live CAS approval, no fake tokens */}
+      <MissionRunnerModal
+        isOpen={showMissionRunnerModal}
+        onClose={() => setShowMissionRunnerModal(false)}
+        workspaceId={activeWorkspaceId}
+        onMissionFinished={() => reloadMissions()}
+      />
     </div>
   );
 };
