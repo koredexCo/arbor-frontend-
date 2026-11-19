@@ -795,6 +795,115 @@ export async function rejectMissionRequest(
   return await res.json();
 }
 
+// ---------------------------------------------------------------------------
+// DEF-REP-02 / DEF-REP-03: mission artifact listing & retrieval
+// (GET /api/v1/missions/{mission_id}/artifacts, GET .../artifacts/{artifact_name}).
+// ---------------------------------------------------------------------------
+
+export interface MissionArtifactSummary {
+  name: string;
+  artifact_type: string;
+  byte_size?: number | null;
+  mime_type?: string | null;
+  created_at?: string | null;
+  storage_location?: string | null;
+  has_content: boolean;
+}
+
+export interface MissionArtifactListResponse {
+  mission_id: string;
+  workspace_id: string;
+  artifacts: MissionArtifactSummary[];
+}
+
+export type MissionArtifactsOutcome =
+  | { kind: "success"; data: MissionArtifactListResponse }
+  | { kind: "error"; status: number; detailText: string };
+
+async function extractErrorDetail(res: Response): Promise<{ status: number; detailText: string }> {
+  const bodyText = await res.text().catch(() => "");
+  let detailText = bodyText || res.statusText;
+  try {
+    const parsed = bodyText ? JSON.parse(bodyText) : null;
+    if (parsed && typeof parsed === "object" && "detail" in parsed) {
+      const d = (parsed as { detail: unknown }).detail;
+      detailText = typeof d === "string" ? d : JSON.stringify(d);
+    }
+  } catch {
+    // Not JSON -- show the raw body verbatim.
+  }
+  return { status: res.status, detailText };
+}
+
+/**
+ * GET /api/v1/missions/{mission_id}/artifacts?workspace_id=... -- lists artifacts
+ * recorded for the mission (database rows, inline spec artifacts, and the recorded
+ * on-disk analysis report). Never throws on a non-2xx response; callers show the
+ * backend's detail text verbatim (403/404/etc).
+ */
+export async function listMissionArtifacts(
+  missionId: string,
+  workspaceId: string
+): Promise<MissionArtifactsOutcome> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/missions/${encodeURIComponent(missionId)}/artifacts?workspace_id=${encodeURIComponent(workspaceId)}`,
+    { method: "GET" },
+    workspaceId
+  );
+
+  if (!res.ok) {
+    const { status, detailText } = await extractErrorDetail(res);
+    return { kind: "error", status, detailText };
+  }
+
+  const bodyText = await res.text().catch(() => "");
+  const data: MissionArtifactListResponse = bodyText
+    ? JSON.parse(bodyText)
+    : { mission_id: missionId, workspace_id: workspaceId, artifacts: [] };
+  return { kind: "success", data };
+}
+
+export type MissionArtifactContentOutcome =
+  | { kind: "success"; content: string; mimeType: string }
+  | { kind: "error"; status: number; detailText: string };
+
+/**
+ * GET /api/v1/missions/{mission_id}/artifacts/{artifact_name}?workspace_id=... -- fetches
+ * one artifact's raw content. `artifactName` is always URL-encoded via encodeURIComponent
+ * before it reaches the request path, so path-traversal or separator characters in a name
+ * (e.g. "../", encoded slashes) never reach the fetch URL raw.
+ */
+export async function getMissionArtifact(
+  missionId: string,
+  artifactName: string,
+  workspaceId: string
+): Promise<MissionArtifactContentOutcome> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/missions/${encodeURIComponent(missionId)}/artifacts/${encodeURIComponent(artifactName)}?workspace_id=${encodeURIComponent(workspaceId)}`,
+    { method: "GET" },
+    workspaceId
+  );
+
+  if (!res.ok) {
+    const { status, detailText } = await extractErrorDetail(res);
+    return { kind: "error", status, detailText };
+  }
+
+  const content = await res.text().catch(() => "");
+  const mimeType = res.headers?.get?.("Content-Type") || "application/octet-stream";
+  return { kind: "success", content, mimeType };
+}
+
+/**
+ * Whether an artifact's content should be rendered as markdown prose rather than
+ * preformatted plain text, based on its recorded MIME type or (as a fallback, since
+ * storage_location=WORKSPACE_DISK rows may omit mime_type) its file extension.
+ */
+export function isMarkdownArtifact(name: string, mimeType?: string | null): boolean {
+  if (mimeType && mimeType.toLowerCase().includes("markdown")) return true;
+  return /\.(md|markdown)$/i.test(name || "");
+}
+
 export interface MissionVerifySealResponse {
   signature_valid: boolean;
   step_count?: number;

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   Zap,
@@ -11,12 +12,14 @@ import {
   Clock,
   Loader2,
   FileCheck2,
+  FileText,
 } from "lucide-react";
 import {
   executeSimpleMissionStep,
   approveMissionRequest,
   rejectMissionRequest,
   verifyMissionSeal,
+  listMissionArtifacts,
   resolveNodeApprovalMode,
   resolveRequiresStrongConfirmation,
   resolveResumingBannerText,
@@ -66,6 +69,8 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [hasDeliverables, setHasDeliverables] = useState(false);
+  const navigate = useNavigate();
   // Task U: captured from approvalDetail.node_approval_mode at the moment Approve is
   // clicked, since approvalDetail itself is cleared before the "resuming" banner renders.
   const [resumingNodeMode, setResumingNodeMode] = useState<NodeApprovalMode>("local-prompt");
@@ -81,6 +86,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setVerifySeal(null);
     setVerifySealError(null);
     setConfirmText("");
+    setHasDeliverables(false);
   };
 
   const handleClose = () => {
@@ -126,6 +132,15 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
         setVerifySeal(seal);
       } catch (e: unknown) {
         setVerifySealError(e instanceof Error ? e.message : "verify-seal request failed");
+      }
+
+      try {
+        const artifactsOutcome = await listMissionArtifacts(outcome.data.mission_id, workspaceId);
+        if (artifactsOutcome.kind === "success") {
+          setHasDeliverables(artifactsOutcome.data.artifacts.length > 0);
+        }
+      } catch {
+        // Non-critical -- the "View deliverables" link simply stays hidden.
       }
     }
   };
@@ -193,6 +208,13 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setApprovalDetail(null);
     setConfirmText("");
     setPhase("rejected");
+  };
+
+  const handleViewDeliverables = () => {
+    if (!finalResult?.mission_id) return;
+    const missionId = finalResult.mission_id;
+    handleClose();
+    navigate(`/missions?missionId=${encodeURIComponent(missionId)}&tab=DELIVERABLES`);
   };
 
   const nodeApprovalMode = resolveNodeApprovalMode(approvalDetail?.node_approval_mode);
@@ -578,7 +600,16 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-app-border">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-app-border">
+              {finalResult.status === "COMPLETED" && hasDeliverables && (
+                <button
+                  onClick={handleViewDeliverables}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-app-border text-xs text-app-muted hover:text-app-text hover:bg-app-secondary transition-colors mr-auto"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>View deliverables</span>
+                </button>
+              )}
               <button
                 onClick={handleClose}
                 className="px-3 py-1.5 rounded-lg border border-app-border text-xs text-app-muted hover:text-app-text transition-colors"

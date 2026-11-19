@@ -35,6 +35,7 @@ import { ExecutionGraphView } from "../components/missions/ExecutionGraphView";
 import { StepRunbookDrawer } from "../components/missions/StepRunbookDrawer";
 import { CreateMissionModal } from "../components/chat/CreateMissionModal";
 import { MissionRunnerModal } from "../components/missions/MissionRunnerModal";
+import { MissionArtifactsPanel } from "../components/missions/MissionArtifactsPanel";
 import {
   getWorkspaceMissions,
   fetchWorkspaceMissions,
@@ -56,6 +57,7 @@ import { cn } from "../lib/utils";
 export const MissionsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const missionIdParam = searchParams.get("missionId");
+  const tabParam = searchParams.get("tab");
 
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() =>
     getAuthoritativeWorkspaceId()
@@ -73,9 +75,10 @@ export const MissionsPage: React.FC = () => {
 
   // Selection & Detail View
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(missionIdParam);
+  const DETAIL_TABS = ["GRAPH", "RUNBOOK", "DELIVERABLES", "VERIFICATION", "AUDIT"] as const;
   const [activeDetailTab, setActiveDetailTab] = useState<
     "GRAPH" | "RUNBOOK" | "DELIVERABLES" | "VERIFICATION" | "AUDIT"
-  >("GRAPH");
+  >(DETAIL_TABS.includes(tabParam as typeof DETAIL_TABS[number]) ? (tabParam as typeof DETAIL_TABS[number]) : "GRAPH");
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
   // Modals & Action Controls
@@ -590,39 +593,19 @@ export const MissionsPage: React.FC = () => {
                     <FileText className="w-4 h-4 text-app-text" />
                     <span className="font-semibold text-xs text-app-text">Technical Deliverables & Analysis Report</span>
                   </div>
-                  <span className="text-[11px] font-mono text-app-dim">
-                    {activeMission.artifacts?.length || 0} Artifacts Attached
-                  </span>
                 </div>
 
-                {activeMission.deliverables || activeMission.output ? (
+                {(activeMission.deliverables || activeMission.output) && (
                   <div className="prose prose-invert max-w-none text-xs font-sans leading-relaxed text-app-text space-y-3 whitespace-pre-wrap bg-app-secondary p-5 rounded-lg border border-app-border overflow-x-auto">
                     {activeMission.deliverables || activeMission.output}
                   </div>
-                ) : (
-                  <div className="p-8 text-center text-app-dim text-xs">
-                    No technical report or deliverables generated for this mission.
-                  </div>
                 )}
 
-                {activeMission.artifacts && activeMission.artifacts.length > 0 && (
-                  <div className="pt-4 border-t border-app-border space-y-3">
-                    <span className="text-xs font-semibold text-app-text">Generated Artifacts</span>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {activeMission.artifacts.map((art, idx) => (
-                        <div key={idx} className="p-3 bg-app-secondary border border-app-border rounded-lg space-y-1 font-mono text-xs">
-                          <div className="flex items-center justify-between text-app-text">
-                            <span className="font-semibold">{art.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-app-card text-app-dim">{art.artifact_type}</span>
-                          </div>
-                          {art.content && (
-                            <p className="text-[11px] text-app-muted truncate">{art.content.slice(0, 100)}...</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <MissionArtifactsPanel
+                  missionId={activeMission.id}
+                  workspaceId={activeWorkspaceId}
+                  hasLegacyContent={Boolean(activeMission.deliverables || activeMission.output)}
+                />
               </div>
             </div>
           )}
