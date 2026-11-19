@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class', '[data-theme="dark"]'],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -12,6 +13,22 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       colors: {
+        app: {
+          bg: 'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          tertiary: 'var(--bg-tertiary)',
+          card: 'var(--bg-card)',
+          hover: 'var(--bg-hover)',
+          active: 'var(--bg-active)',
+          border: 'var(--border-default)',
+          subtle: 'var(--border-subtle)',
+          strong: 'var(--border-strong)',
+          text: 'var(--text-primary)',
+          muted: 'var(--text-muted)',
+          dim: 'var(--text-secondary)',
+          inverted: 'var(--text-inverted)',
+          accent: 'var(--accent-primary)',
+        },
         brand: {
           50: '#ffffff',
           100: '#f5f5f5',

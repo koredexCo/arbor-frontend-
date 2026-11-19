@@ -1,4 +1,4 @@
-import type { Conversation, Branch, Message, ChatResponse, UserSettings, StoredApiKey, UsageSummary, Model } from "../types";
+import type { Conversation, Branch, Message, ChatResponse, UserSettings, StoredApiKey, UsageSummary, Model, WorkspaceResponse, WorkspaceMemberResponse } from "../types";
 import { supabase } from '../lib/supabase';
 
 import type { VisibleGraph } from "../types/visibleGraph";
@@ -7,7 +7,14 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 // Returns the current Supabase session JWT for API requests.
 // Refreshes the session if it exists but the access_token may be stale.
+const isDevAuthBypass =
+  Boolean(import.meta.env.DEV) && import.meta.env.VITE_DEV_AUTH_BYPASS === 'true';
+
 export async function getAccessToken(): Promise<string> {
+  if (isDevAuthBypass) {
+    return "dev-local-session-token";
+  }
+
   // Try to get the existing session first
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -65,7 +72,8 @@ export async function sendMessageStream(
   branchId: string,
   content: string,
   onChunk: (chunk: string) => void,
-  onDone: (node: any) => void
+  onDone: (node: any) => void,
+  signal?: AbortSignal
 ) {
   const token = await getAccessToken()
   
@@ -75,7 +83,8 @@ export async function sendMessageStream(
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ branch_id: branchId, content })
+    body: JSON.stringify({ branch_id: branchId, content }),
+    signal,
   })
   
   if (!response.ok) {
@@ -396,6 +405,35 @@ export const api = {
   async getSystemHealth(): Promise<any> {
     const res = await fetchWithAuth(`/system/health`);
     return res.json();
-  }
+  },
+
+  // --- Workspaces ---
+  async listWorkspaces(_token?: string): Promise<WorkspaceResponse[]> {
+    const res = await fetchWithAuth(`/workspaces/`);
+    return res.json();
+  },
+
+  async getWorkspace(_token: string | undefined, workspaceId: string): Promise<WorkspaceResponse> {
+    const res = await fetchWithAuth(`/workspaces/${workspaceId}`);
+    return res.json();
+  },
+
+  async createWorkspace(
+    _token: string | undefined,
+    data: { name: string; slug: string; visibility?: string }
+  ): Promise<WorkspaceResponse> {
+    const res = await fetchWithAuth(`/workspaces/`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async listWorkspaceMembers(_token: string | undefined, workspaceId: string): Promise<WorkspaceMemberResponse[]> {
+    const res = await fetchWithAuth(`/workspaces/${workspaceId}/members`);
+    return res.json();
+  },
 };
 
+
+export const apiClient = api;
