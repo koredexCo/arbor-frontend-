@@ -17,9 +17,13 @@ import {
   approveMissionRequest,
   rejectMissionRequest,
   verifyMissionSeal,
+  resolveNodeApprovalMode,
+  resolveRequiresStrongConfirmation,
+  resolveResumingBannerText,
   type MissionApprovalDetail,
   type ExecuteSimpleFinalResponse,
   type MissionVerifySealResponse,
+  type NodeApprovalMode,
 } from "../../services/orchestratorApi";
 
 interface MissionRunnerModalProps {
@@ -61,6 +65,10 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
   const [verifySealError, setVerifySealError] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  // Task U: captured from approvalDetail.node_approval_mode at the moment Approve is
+  // clicked, since approvalDetail itself is cleared before the "resuming" banner renders.
+  const [resumingNodeMode, setResumingNodeMode] = useState<NodeApprovalMode>("local-prompt");
 
   if (!isOpen) return null;
 
@@ -72,6 +80,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setFinalResult(null);
     setVerifySeal(null);
     setVerifySealError(null);
+    setConfirmText("");
   };
 
   const handleClose = () => {
@@ -96,6 +105,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
 
     if (outcome.kind === "approval_required") {
       setApprovalDetail(outcome.detail);
+      setConfirmText("");
       setPhase("awaiting_approval");
       return;
     }
@@ -139,8 +149,10 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
 
   const handleApprove = async () => {
     if (!approvalDetail || !clientRequestId) return;
+    if (requiresStrongConfirmation && confirmText !== confirmationTargetId) return;
     setIsApproving(true);
     try {
+      setResumingNodeMode(resolveNodeApprovalMode(approvalDetail.node_approval_mode));
       const approveResp = await approveMissionRequest(
         approvalDetail.request_id,
         workspaceId,
@@ -155,6 +167,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
         return;
       }
       setApprovalDetail(null);
+      setConfirmText("");
       setPhase("resuming");
       await driveStep(clientRequestId, approveResp.token_id);
     } catch (e: unknown) {
@@ -178,8 +191,18 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     }
     setIsRejecting(false);
     setApprovalDetail(null);
+    setConfirmText("");
     setPhase("rejected");
   };
+
+  const nodeApprovalMode = resolveNodeApprovalMode(approvalDetail?.node_approval_mode);
+  const requiresStrongConfirmation = resolveRequiresStrongConfirmation(
+    approvalDetail?.tool_name,
+    approvalDetail?.requires_strong_confirmation
+  );
+  const awaitingStep = approvalDetail?.plan_preview?.find((s) => s.status === "awaiting_approval");
+  const confirmationTargetId = awaitingStep?.step_id ?? approvalDetail?.request_id ?? "";
+  const confirmationSatisfied = !requiresStrongConfirmation || confirmText === confirmationTargetId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -282,6 +305,15 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
               </span>
             </div>
 
+            <div className="p-2.5 bg-app-secondary border border-app-border rounded-lg text-[11px] font-mono text-app-dim">
+              Node approval:{" "}
+              <span className="text-app-text font-bold">
+                {nodeApprovalMode === "remote-receipt"
+                  ? "browser only (remote receipt)"
+                  : "local prompt"}
+              </span>
+            </div>
+
             {approvalDetail.plan_preview && approvalDetail.plan_preview.length > 0 ? (
               <div className="space-y-2">
                 {approvalDetail.plan_preview.map((step) => {
@@ -337,6 +369,26 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
               </div>
             )}
 
+            {requiresStrongConfirmation && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg space-y-1.5">
+                <label className="text-[11px] text-rose-300 font-semibold block">
+                  High-risk step -- type the exact step id (
+                  <span className="font-mono">{confirmationTargetId}</span>) to enable Approve:
+                </label>
+                <input
+                  type="text"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.preventDefault();
+                  }}
+                  placeholder={confirmationTargetId}
+                  className="w-full px-3 py-1.5 bg-app-secondary border border-rose-500/40 rounded-lg text-xs font-mono text-app-text outline-none focus:border-rose-400 placeholder:text-app-muted"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-app-border">
               <button
                 onClick={handleReject}
@@ -348,7 +400,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
               </button>
               <button
                 onClick={handleApprove}
-                disabled={isRejecting || isApproving}
+                disabled={isRejecting || isApproving || !confirmationSatisfied}
                 className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -361,10 +413,17 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
         {/* RESUMING -- post-approval banner about the separate node-local prompt */}
         {phase === "resuming" && (
           <div className="space-y-3">
-            <div className="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-lg text-xs text-amber-200 font-semibold flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Now answer the prompt in the NODE window within 120s.</span>
-            </div>
+            {resumingNodeMode === "remote-receipt" ? (
+              <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-lg text-xs text-emerald-200 font-semibold flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{resolveResumingBannerText(resumingNodeMode)}</span>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-lg text-xs text-amber-200 font-semibold flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{resolveResumingBannerText(resumingNodeMode)}</span>
+              </div>
+            )}
             <div className="p-6 flex flex-col items-center gap-3 text-app-muted text-xs">
               <Loader2 className="w-6 h-6 animate-spin text-app-text" />
               <span>Resuming mission with the approved CAS token...</span>

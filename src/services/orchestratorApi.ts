@@ -591,6 +591,28 @@ export interface MissionApprovalReviewer {
 }
 
 /**
+ * Task U (node-remote-receipt-mode-20261119): the node's approval mode as reported at
+ * registration -- 'local-prompt' (default; node asks the human at its own terminal) or
+ * 'remote-receipt' (headless/server; node never prompts, trusts only the backend's signed
+ * receipt). Any other value (including missing/unknown) must degrade to 'local-prompt' for
+ * display purposes -- see resolveNodeApprovalMode.
+ */
+export type NodeApprovalMode = "local-prompt" | "remote-receipt";
+
+/**
+ * Task U: the same set arbor_agent.permissions.HIGH_RISK_TOOLS classifies as high-risk,
+ * duplicated here (frontend has no access to the Python module) so the UI can still demand
+ * a strong confirmation for these tools even if a backend response omits
+ * requires_strong_confirmation entirely.
+ */
+export const HIGH_RISK_TOOLS_LOCAL: ReadonlySet<string> = new Set([
+  "terminal.execute",
+  "terminal.exec",
+  "fs.delete",
+  "test.run",
+]);
+
+/**
  * Body of an HTTP 412 response from execute_simple: a step is awaiting human CAS approval.
  * Some backends wrap this in a top-level {detail: ...}; others return it as the top-level
  * object directly, so callers should treat `detail` as already unwrapped.
@@ -602,6 +624,45 @@ export interface MissionApprovalDetail {
   parameters?: Record<string, unknown> | null;
   plan_preview?: MissionPlanPreviewStep[];
   reviewer?: MissionApprovalReviewer;
+  node_approval_mode?: string | null;
+  requires_strong_confirmation?: boolean;
+}
+
+/**
+ * Normalizes an arbitrary, possibly missing/unknown node_approval_mode value from the backend
+ * into a known NodeApprovalMode for display wording. Unknown or missing degrades safely to
+ * 'local-prompt' -- the UI never claims a node won't prompt unless the mode is explicitly
+ * 'remote-receipt'.
+ */
+export function resolveNodeApprovalMode(raw: string | null | undefined): NodeApprovalMode {
+  return raw === "remote-receipt" ? "remote-receipt" : "local-prompt";
+}
+
+/**
+ * Whether the Approve action for this step should require a typed strong confirmation.
+ * True when the backend says so explicitly, OR, when the backend omits/denies the field,
+ * when the tool is one of the locally-known high-risk tools -- a missing backend flag must
+ * never silently drop the confirmation requirement for tools we already know are high-risk.
+ */
+export function resolveRequiresStrongConfirmation(
+  toolName: string | null | undefined,
+  backendFlag: boolean | null | undefined
+): boolean {
+  if (backendFlag === true) return true;
+  const norm = (toolName || "").trim().toLowerCase();
+  return HIGH_RISK_TOOLS_LOCAL.has(norm);
+}
+
+/**
+ * The post-approval banner text shown while execute_simple resumes with the approved CAS
+ * token. Never claims the node will not prompt unless the mode is explicitly 'remote-receipt'
+ * -- an unknown/missing mode (resolved to 'local-prompt' by resolveNodeApprovalMode) keeps the
+ * original "answer the prompt in the NODE window" wording.
+ */
+export function resolveResumingBannerText(mode: NodeApprovalMode): string {
+  return mode === "remote-receipt"
+    ? "Approved. The node will execute automatically -- no action needed on the node."
+    : "Now answer the prompt in the NODE window within 120s.";
 }
 
 export interface MissionStepResult {

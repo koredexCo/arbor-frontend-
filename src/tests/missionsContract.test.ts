@@ -22,6 +22,9 @@ import {
   executeSimpleMissionStep,
   approveMissionRequest,
   rejectMissionRequest,
+  resolveNodeApprovalMode,
+  resolveRequiresStrongConfirmation,
+  resolveResumingBannerText,
   type SimpleMissionPayload,
 } from "../services/orchestratorApi";
 
@@ -859,6 +862,136 @@ async function runBattery() {
       assert.strictEqual(outcome.data.mission_failure_record?.exit_code, 1);
       assert.match(outcome.data.mission_failure_record?.output_tail || "", /ValueError: boom/);
       assert.strictEqual(outcome.data.not_executed_steps?.[0].step_id, "step_2");
+    } finally {
+      restore();
+    }
+  });
+
+  // 28. Task V: remote-receipt mode shows no node-window banner
+  await test("Task V: remote-receipt node mode resolves to the no-node-window banner", () => {
+    const mode = resolveNodeApprovalMode("remote-receipt");
+    assert.strictEqual(mode, "remote-receipt");
+    const banner = resolveResumingBannerText(mode);
+    assert.match(banner, /execute automatically/);
+    assert.strictEqual(/NODE window/.test(banner), false, "remote-receipt banner must not mention the node window");
+  });
+
+  // 29. Task V: local-prompt mode keeps the existing node-window banner
+  await test("Task V: local-prompt node mode keeps the NODE-window banner", () => {
+    const mode = resolveNodeApprovalMode("local-prompt");
+    assert.strictEqual(mode, "local-prompt");
+    const banner = resolveResumingBannerText(mode);
+    assert.match(banner, /NODE window/);
+  });
+
+  // 30. Task V: unknown/missing node_approval_mode falls back to local-prompt wording
+  await test("Task V: unknown or missing node_approval_mode falls back to local-prompt wording", () => {
+    assert.strictEqual(resolveNodeApprovalMode(undefined), "local-prompt");
+    assert.strictEqual(resolveNodeApprovalMode(null), "local-prompt");
+    assert.strictEqual(resolveNodeApprovalMode("sudo-mode"), "local-prompt");
+    assert.strictEqual(resolveNodeApprovalMode(""), "local-prompt");
+
+    const banner = resolveResumingBannerText(resolveNodeApprovalMode("garbage"));
+    assert.match(banner, /NODE window/, "an unknown mode must never claim the node won't prompt");
+  });
+
+  // 31. Task V: strong confirmation required when the backend flag is explicitly true
+  await test("Task V: requires_strong_confirmation=true from the backend is honored for any tool", () => {
+    assert.strictEqual(resolveRequiresStrongConfirmation("fs.read", true), true);
+    assert.strictEqual(resolveRequiresStrongConfirmation(undefined, true), true);
+  });
+
+  // 32. Task V: a known high-risk tool still requires confirmation even if the backend omits the flag
+  await test("Task V: high-risk tool without the backend flag still requires strong confirmation", () => {
+    assert.strictEqual(resolveRequiresStrongConfirmation("terminal.execute", undefined), true);
+    assert.strictEqual(resolveRequiresStrongConfirmation("terminal.exec", null), true);
+    assert.strictEqual(resolveRequiresStrongConfirmation("fs.delete", false), true, "backendFlag=false must not override a locally-known high-risk tool");
+    assert.strictEqual(resolveRequiresStrongConfirmation("TEST.RUN", undefined), true, "tool-name comparison must be case-insensitive");
+  });
+
+  // 33. Task V: a non-high-risk tool with no backend flag does not require confirmation
+  await test("Task V: a non-high-risk tool with no backend flag does not require strong confirmation", () => {
+    assert.strictEqual(resolveRequiresStrongConfirmation("fs.write", undefined), false);
+    assert.strictEqual(resolveRequiresStrongConfirmation("fs.write", false), false);
+    assert.strictEqual(resolveRequiresStrongConfirmation(undefined, undefined), false);
+  });
+
+  // 34. Task V: strong confirmation gate -- exact typed step id required, wrong case/whitespace blocks it
+  await test("Task V: strong confirmation gate requires an exact, case-sensitive, untrimmed match", () => {
+    const targetStepId = "step_run_tests";
+    const isApproveEnabled = (requiresStrongConfirmation: boolean, typed: string) =>
+      !requiresStrongConfirmation || typed === targetStepId;
+
+    // Blocked until typed exactly
+    assert.strictEqual(isApproveEnabled(true, ""), false);
+    assert.strictEqual(isApproveEnabled(true, "step_run_test"), false, "partial match must stay blocked");
+    assert.strictEqual(isApproveEnabled(true, "STEP_RUN_TESTS"), false, "wrong case must stay blocked");
+    assert.strictEqual(isApproveEnabled(true, " step_run_tests"), false, "leading whitespace must stay blocked");
+    assert.strictEqual(isApproveEnabled(true, "step_run_tests "), false, "trailing whitespace must stay blocked");
+    assert.strictEqual(isApproveEnabled(true, "step_run_tests"), true, "exact match must unblock Approve");
+
+    // Reject is never gated by this check
+    const isRejectEnabled = (isRejecting: boolean, isApproving: boolean) => !isRejecting && !isApproving;
+    assert.strictEqual(isRejectEnabled(false, false), true, "Reject stays enabled while Approve is blocked");
+  });
+
+  // 35. Task V: full 412 flow carries node_approval_mode and requires_strong_confirmation through
+  await test("Task V: 412 detail round-trips node_approval_mode and requires_strong_confirmation", async () => {
+    const workspaceId = "ws-mission-runner";
+    const approvalBody = {
+      detail: {
+        mission_id: "mission-nau-1",
+        request_id: "req-nau-1",
+        tool_name: "test.run",
+        parameters: { test_path: "tests/test_foo.py" },
+        plan_preview: [
+          { step_id: "step_run_tests", status: "awaiting_approval", action: "run_tests", parameters: {} },
+        ],
+        node_approval_mode: "remote-receipt",
+        requires_strong_confirmation: true,
+      },
+    };
+    const { restore } = installMockFetch([{ status: 412, body: approvalBody }]);
+    try {
+      const outcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Run the test suite",
+        client_request_id: "req-client-nau-1",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome.kind, "approval_required");
+      if (outcome.kind !== "approval_required") throw new Error("unreachable");
+      assert.strictEqual(outcome.detail.node_approval_mode, "remote-receipt");
+      assert.strictEqual(outcome.detail.requires_strong_confirmation, true);
+      assert.strictEqual(resolveNodeApprovalMode(outcome.detail.node_approval_mode), "remote-receipt");
+      assert.strictEqual(
+        resolveRequiresStrongConfirmation(outcome.detail.tool_name, outcome.detail.requires_strong_confirmation),
+        true
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  // 36. Task V: a node-denied step surfaces the backend's reason verbatim in the failure view
+  await test("Task V: node-denied step (REMOTE_DENY_TOOL) surfaces the backend reason verbatim", async () => {
+    const workspaceId = "ws-mission-runner";
+    const { restore } = installMockFetch([
+      { status: 409, body: { detail: "REMOTE_DENY_TOOL: terminal.execute is on this node's remote-deny-tools list" } },
+    ]);
+    try {
+      const outcome = await executeSimpleMissionStep({
+        workspace_id: workspaceId,
+        user_objective: "Run a shell command",
+        client_request_id: "req-client-nau-2",
+        enable_two_stage_planning: false,
+        timeout_seconds: 170,
+      });
+      assert.strictEqual(outcome.kind, "error");
+      if (outcome.kind !== "error") throw new Error("unreachable");
+      assert.strictEqual(outcome.status, 409);
+      assert.match(outcome.detailText, /REMOTE_DENY_TOOL/);
     } finally {
       restore();
     }
