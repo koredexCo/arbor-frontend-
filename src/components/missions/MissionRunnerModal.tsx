@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -7,7 +7,6 @@ import {
   ShieldAlert,
   AlertTriangle,
   AlertCircle,
-  CheckCircle2,
   XCircle,
   Clock,
   Loader2,
@@ -28,12 +27,28 @@ import {
   type MissionVerifySealResponse,
   type NodeApprovalMode,
 } from "../../services/orchestratorApi";
+import { MissionApprovalCard } from "./MissionApprovalCard";
+import { saveMissionRun, removeMissionRun } from "../../services/missionRunStore";
+
+/**
+ * Task AB (B2): when set, the modal opens straight into the awaiting-approval phase using
+ * this cached (or freshly re-verified) detail instead of starting a fresh run -- used to
+ * resume a mission run that survived a page refresh. Never triggers a network call by
+ * itself; Approve/Reject behave exactly as they would for a live 412.
+ */
+export interface MissionRunnerResumeState {
+  clientRequestId: string;
+  objective: string;
+  approvalDetail: MissionApprovalDetail;
+  approvalDetailIsPartial?: boolean;
+}
 
 interface MissionRunnerModalProps {
   isOpen: boolean;
   onClose: () => void;
   workspaceId: string;
   onMissionFinished?: (missionId: string) => void;
+  resumeState?: MissionRunnerResumeState | null;
 }
 
 type RunPhase =
@@ -55,6 +70,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
   onClose,
   workspaceId,
   onMissionFinished,
+  resumeState,
 }) => {
   const [objective, setObjective] = useState("");
   const [enableTwoStagePlanning, setEnableTwoStagePlanning] = useState(false);
@@ -62,6 +78,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
 
   const [clientRequestId, setClientRequestId] = useState<string | null>(null);
   const [approvalDetail, setApprovalDetail] = useState<MissionApprovalDetail | null>(null);
+  const [approvalDetailIsPartial, setApprovalDetailIsPartial] = useState(false);
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const [finalResult, setFinalResult] = useState<ExecuteSimpleFinalResponse | null>(null);
   const [verifySeal, setVerifySeal] = useState<MissionVerifySealResponse | null>(null);
@@ -74,6 +91,22 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
   // Task U: captured from approvalDetail.node_approval_mode at the moment Approve is
   // clicked, since approvalDetail itself is cleared before the "resuming" banner renders.
   const [resumingNodeMode, setResumingNodeMode] = useState<NodeApprovalMode>("local-prompt");
+  // Task AB (B2): never auto-approves or re-submits -- just seeds the form/awaiting_approval
+  // state from a previously cached (and already re-verified by the caller) 412.
+  const seededResumeKeyRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !resumeState) return;
+    if (seededResumeKeyRef.current === resumeState.clientRequestId) return;
+    seededResumeKeyRef.current = resumeState.clientRequestId;
+    setObjective(resumeState.objective);
+    setClientRequestId(resumeState.clientRequestId);
+    setApprovalDetail(resumeState.approvalDetail);
+    setApprovalDetailIsPartial(Boolean(resumeState.approvalDetailIsPartial));
+    setConfirmText("");
+    setErrorInfo(null);
+    setPhase("awaiting_approval");
+  }, [isOpen, resumeState]);
 
   if (!isOpen) return null;
 
@@ -81,6 +114,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setPhase("form");
     setClientRequestId(null);
     setApprovalDetail(null);
+    setApprovalDetailIsPartial(false);
     setErrorInfo(null);
     setFinalResult(null);
     setVerifySeal(null);
@@ -93,6 +127,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     resetRunState();
     setObjective("");
     setEnableTwoStagePlanning(false);
+    seededResumeKeyRef.current = null;
     onClose();
   };
 
@@ -111,19 +146,35 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
 
     if (outcome.kind === "approval_required") {
       setApprovalDetail(outcome.detail);
+      setApprovalDetailIsPartial(false);
       setConfirmText("");
       setPhase("awaiting_approval");
+      saveMissionRun({
+        clientRequestId: reqId,
+        workspaceId,
+        kind: "simple",
+        objective,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        phase: "awaiting_approval",
+        missionId: outcome.detail.mission_id,
+        enableTwoStagePlanning,
+        approvalDetail: outcome.detail,
+        approvalDetailIsPartial: false,
+      });
       return;
     }
 
     if (outcome.kind === "error") {
       setErrorInfo({ status: outcome.status, detailText: outcome.detailText });
       setPhase("error");
+      removeMissionRun(workspaceId, reqId);
       return;
     }
 
     setFinalResult(outcome.data);
     setPhase("done");
+    removeMissionRun(workspaceId, reqId);
     onMissionFinished?.(outcome.data.mission_id);
 
     if (outcome.data.mission_id) {
@@ -153,12 +204,23 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     const reqId = crypto.randomUUID();
     setClientRequestId(reqId);
     setPhase("running");
+    saveMissionRun({
+      clientRequestId: reqId,
+      workspaceId,
+      kind: "simple",
+      objective,
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      phase: "running",
+      enableTwoStagePlanning,
+    });
 
     try {
       await driveStep(reqId);
     } catch (e: unknown) {
       setErrorInfo({ status: 0, detailText: e instanceof Error ? e.message : String(e) });
       setPhase("error");
+      removeMissionRun(workspaceId, reqId);
     }
   };
 
@@ -179,22 +241,36 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
           detailText: "Approval response did not include a token_id -- cannot resume the mission.",
         });
         setPhase("error");
+        removeMissionRun(workspaceId, clientRequestId);
         return;
       }
       setApprovalDetail(null);
+      setApprovalDetailIsPartial(false);
       setConfirmText("");
       setPhase("resuming");
+      saveMissionRun({
+        clientRequestId,
+        workspaceId,
+        kind: "simple",
+        objective,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        phase: "running",
+        missionId: approvalDetail.mission_id,
+        enableTwoStagePlanning,
+      });
       await driveStep(clientRequestId, approveResp.token_id);
     } catch (e: unknown) {
       setErrorInfo({ status: 0, detailText: e instanceof Error ? e.message : String(e) });
       setPhase("error");
+      removeMissionRun(workspaceId, clientRequestId);
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleReject = async () => {
-    if (!approvalDetail) return;
+    if (!approvalDetail || !clientRequestId) return;
     setIsRejecting(true);
     try {
       await rejectMissionRequest(approvalDetail.request_id, workspaceId, "declined via UI");
@@ -206,8 +282,10 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     }
     setIsRejecting(false);
     setApprovalDetail(null);
+    setApprovalDetailIsPartial(false);
     setConfirmText("");
     setPhase("rejected");
+    removeMissionRun(workspaceId, clientRequestId);
   };
 
   const handleViewDeliverables = () => {
@@ -217,14 +295,12 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     navigate(`/missions?missionId=${encodeURIComponent(missionId)}&tab=DELIVERABLES`);
   };
 
-  const nodeApprovalMode = resolveNodeApprovalMode(approvalDetail?.node_approval_mode);
   const requiresStrongConfirmation = resolveRequiresStrongConfirmation(
     approvalDetail?.tool_name,
     approvalDetail?.requires_strong_confirmation
   );
   const awaitingStep = approvalDetail?.plan_preview?.find((s) => s.status === "awaiting_approval");
   const confirmationTargetId = awaitingStep?.step_id ?? approvalDetail?.request_id ?? "";
-  const confirmationSatisfied = !requiresStrongConfirmation || confirmText === confirmationTargetId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -319,117 +395,16 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
 
         {/* AWAITING APPROVAL */}
         {phase === "awaiting_approval" && approvalDetail && (
-          <div className="space-y-4">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-300 font-semibold flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>
-                Approval needed (mission {approvalDetail.mission_id}, request {approvalDetail.request_id})
-              </span>
-            </div>
-
-            <div className="p-2.5 bg-app-secondary border border-app-border rounded-lg text-[11px] font-mono text-app-dim">
-              Node approval:{" "}
-              <span className="text-app-text font-bold">
-                {nodeApprovalMode === "remote-receipt"
-                  ? "browser only (remote receipt)"
-                  : "local prompt"}
-              </span>
-            </div>
-
-            {approvalDetail.plan_preview && approvalDetail.plan_preview.length > 0 ? (
-              <div className="space-y-2">
-                {approvalDetail.plan_preview.map((step) => {
-                  const isAwaiting = step.status === "awaiting_approval";
-                  return (
-                    <div
-                      key={step.step_id}
-                      className={`p-3 rounded-lg border text-xs space-y-2 ${
-                        isAwaiting
-                          ? "bg-amber-500/10 border-amber-500/40"
-                          : "bg-app-secondary border-app-border"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-app-text">
-                          [{step.status}] {step.step_id}: {step.action}
-                        </span>
-                        {isAwaiting && (
-                          <span className="text-[10px] font-bold uppercase text-amber-400">
-                            Awaiting Approval
-                          </span>
-                        )}
-                      </div>
-                      {isAwaiting && (
-                        <div className="space-y-2">
-                          <div className="text-[11px] text-app-muted">
-                            Tool: <span className="font-mono text-app-text">{approvalDetail.tool_name}</span>
-                          </div>
-                          <pre className="p-2.5 bg-app-secondary border border-app-border rounded text-[11px] font-mono text-app-text overflow-x-auto overflow-y-auto max-h-64 whitespace-pre-wrap">
-                            {JSON.stringify(step.parameters ?? {}, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/40 rounded-lg text-xs space-y-2">
-                <div className="text-[11px] text-app-muted">
-                  Tool: <span className="font-mono text-app-text">{approvalDetail.tool_name}</span>
-                </div>
-                <pre className="p-2.5 bg-app-secondary border border-app-border rounded text-[11px] font-mono text-app-text overflow-x-auto overflow-y-auto max-h-64 whitespace-pre-wrap">
-                  {JSON.stringify(approvalDetail.parameters ?? {}, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {approvalDetail.reviewer && (
-              <div className="p-2.5 bg-app-secondary border border-app-border rounded-lg text-[11px] font-mono text-app-dim">
-                Reviewer verdict: <span className="text-app-text">{approvalDetail.reviewer.verdict}</span>{" "}
-                (status={approvalDetail.reviewer.status})
-              </div>
-            )}
-
-            {requiresStrongConfirmation && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg space-y-1.5">
-                <label className="text-[11px] text-rose-300 font-semibold block">
-                  High-risk step -- type the exact step id (
-                  <span className="font-mono">{confirmationTargetId}</span>) to enable Approve:
-                </label>
-                <input
-                  type="text"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.preventDefault();
-                  }}
-                  placeholder={confirmationTargetId}
-                  className="w-full px-3 py-1.5 bg-app-secondary border border-rose-500/40 rounded-lg text-xs font-mono text-app-text outline-none focus:border-rose-400 placeholder:text-app-muted"
-                  autoComplete="off"
-                />
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-app-border">
-              <button
-                onClick={handleReject}
-                disabled={isRejecting || isApproving}
-                className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                <span>{isRejecting ? "Rejecting..." : "Reject"}</span>
-              </button>
-              <button
-                onClick={handleApprove}
-                disabled={isRejecting || isApproving || !confirmationSatisfied}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{isApproving ? "Approving..." : "Approve"}</span>
-              </button>
-            </div>
-          </div>
+          <MissionApprovalCard
+            approvalDetail={approvalDetail}
+            isPartial={approvalDetailIsPartial}
+            confirmText={confirmText}
+            onConfirmTextChange={setConfirmText}
+            isApproving={isApproving}
+            isRejecting={isRejecting}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
         )}
 
         {/* RESUMING -- post-approval banner about the separate node-local prompt */}

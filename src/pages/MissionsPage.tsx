@@ -25,6 +25,7 @@ import {
   RefreshCw,
   ExternalLink,
   FileText,
+  Microscope,
 } from "lucide-react";
 import { FeatureUnavailableBadge } from "../components/common/FeatureUnavailableBadge";
 import { EmptyState } from "../components/common/EmptyState";
@@ -34,8 +35,9 @@ import { OfflineBanner } from "../components/common/OfflineBanner";
 import { ExecutionGraphView } from "../components/missions/ExecutionGraphView";
 import { StepRunbookDrawer } from "../components/missions/StepRunbookDrawer";
 import { CreateMissionModal } from "../components/chat/CreateMissionModal";
-import { MissionRunnerModal } from "../components/missions/MissionRunnerModal";
+import { MissionRunnerModal, type MissionRunnerResumeState } from "../components/missions/MissionRunnerModal";
 import { MissionArtifactsPanel } from "../components/missions/MissionArtifactsPanel";
+import { AnalysisRunnerModal } from "../components/missions/AnalysisRunnerModal";
 import {
   getWorkspaceMissions,
   fetchWorkspaceMissions,
@@ -45,6 +47,8 @@ import {
   type MissionRecord,
   type AuthoritativeMissionStatus,
 } from "../services/orchestratorApi";
+import { type StoredMissionRun } from "../services/missionRunStore";
+import { reconcileMissionRuns } from "../services/missionRunReconciler";
 import {
   getAuthoritativeWorkspaceId,
   subscribeToWorkspaceChanges,
@@ -84,8 +88,15 @@ export const MissionsPage: React.FC = () => {
   // Modals & Action Controls
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMissionRunnerModal, setShowMissionRunnerModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  // Task AB (B2): execute_simple runs restored from localStorage and re-verified
+  // against the backend -- never shown as live without that re-verification.
+  const [activeRuns, setActiveRuns] = useState<StoredMissionRun[]>([]);
+  const [resumeTarget, setResumeTarget] = useState<StoredMissionRun | null>(null);
+  const reconcileSeqRef = React.useRef(0);
 
   const { models } = useModels();
   const { branches, activeBranchId } = useBranch();
@@ -100,9 +111,29 @@ export const MissionsPage: React.FC = () => {
       setError(null);
       setIsCrossWorkspaceForbidden(false);
       setIsOffline(false);
+      setActiveRuns([]);
+      setResumeTarget(null);
     });
     return () => unsubscribe();
   }, []);
+
+  // Task AB (B2): restores stored execute_simple runs for this workspace, re-fetches
+  // each one's real backend state, and reconciles. Never auto-approves or re-submits --
+  // only ever issues GET requests (mission status, approval status/list). See
+  // services/missionRunReconciler.ts for the actual logic and its contract tests.
+  const reconcileActiveMissionRuns = async () => {
+    const seq = ++reconcileSeqRef.current;
+    const targetWs = activeWorkspaceId;
+    const reconciled = await reconcileMissionRuns(targetWs);
+    if (seq === reconcileSeqRef.current && targetWs === activeWorkspaceId) {
+      setActiveRuns(reconciled);
+    }
+  };
+
+  useEffect(() => {
+    reconcileActiveMissionRuns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWorkspaceId]);
 
   // Load missions strictly scoped to active workspace
   const reloadMissions = () => {
@@ -354,8 +385,63 @@ export const MissionsPage: React.FC = () => {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Execute Mission</span>
           </button>
+
+          <button
+            onClick={() => setShowAnalysisModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-app-secondary border border-app-border text-app-text text-xs font-medium hover:border-app-strong transition-colors"
+            title="Run a read-only architectural analysis via execute_analysis -- no CAS approval expected"
+          >
+            <Microscope className="w-3.5 h-3.5" />
+            <span>Run Analysis</span>
+          </button>
         </div>
       </div>
+
+      {/* Task AB (B2): execute_simple runs restored from storage and re-verified against
+          the backend -- a pending approval here never auto-approves or re-submits. */}
+      {activeRuns.length > 0 && (
+        <div className="p-4 bg-app-card border border-app-border rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-app-text">Resumed Execute-Mission Runs</span>
+            <button
+              onClick={() => reconcileActiveMissionRuns()}
+              className="text-[11px] text-app-muted hover:text-app-text flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Refresh
+            </button>
+          </div>
+          <div className="space-y-2">
+            {activeRuns.map((run) => (
+              <div
+                key={run.clientRequestId}
+                className="p-3 bg-app-secondary border border-app-border rounded-lg flex items-center justify-between gap-3 text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="text-app-text truncate">{run.objective}</div>
+                  <div className="text-[10px] text-app-dim font-mono">
+                    mission {run.missionId} -- started {new Date(run.startedAt).toLocaleTimeString()}
+                  </div>
+                </div>
+                {run.phase === "awaiting_approval" ? (
+                  <button
+                    onClick={() => setResumeTarget(run)}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Review Approval
+                  </button>
+                ) : (
+                  <span className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono text-sky-400">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Running
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {isLoading ? (
@@ -866,12 +952,38 @@ export const MissionsPage: React.FC = () => {
         }}
       />
 
-      {/* Real execute_simple Mission Runner: live CAS approval, no fake tokens */}
+      {/* Real execute_simple Mission Runner: live CAS approval, no fake tokens. Also
+          reopened (with resumeState) to review a run restored after a page refresh. */}
       <MissionRunnerModal
-        isOpen={showMissionRunnerModal}
-        onClose={() => setShowMissionRunnerModal(false)}
+        isOpen={showMissionRunnerModal || Boolean(resumeTarget)}
+        onClose={() => {
+          setShowMissionRunnerModal(false);
+          setResumeTarget(null);
+          reconcileActiveMissionRuns();
+        }}
         workspaceId={activeWorkspaceId}
-        onMissionFinished={() => reloadMissions()}
+        onMissionFinished={() => {
+          reloadMissions();
+          reconcileActiveMissionRuns();
+        }}
+        resumeState={
+          resumeTarget?.approvalDetail
+            ? ({
+                clientRequestId: resumeTarget.clientRequestId,
+                objective: resumeTarget.objective,
+                approvalDetail: resumeTarget.approvalDetail,
+                approvalDetailIsPartial: resumeTarget.approvalDetailIsPartial,
+              } as MissionRunnerResumeState)
+            : null
+        }
+      />
+
+      {/* Task AB (B3): read-only architectural analysis via execute_analysis. */}
+      <AnalysisRunnerModal
+        isOpen={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        workspaceId={activeWorkspaceId}
+        onAnalysisFinished={() => reloadMissions()}
       />
     </div>
   );

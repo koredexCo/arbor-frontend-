@@ -930,3 +930,174 @@ export async function verifyMissionSeal(
   }
   return await res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Task AB (B2): read-only approval-request lookups used to reconcile a mission
+// run restored from localStorage against the backend's real, current state --
+// never used to approve/resume anything by themselves.
+// ---------------------------------------------------------------------------
+
+export type ApprovalRequestStatusValue =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | "CONSUMED";
+
+export interface ApprovalRequestSummary {
+  request_id: string;
+  workspace_id: string;
+  mission_id: string;
+  tool_name: string;
+  status: ApprovalRequestStatusValue;
+  created_at: string;
+  expires_at: string;
+}
+
+export type ApprovalRequestOutcome =
+  | { kind: "success"; data: ApprovalRequestSummary }
+  | { kind: "not_found" }
+  | { kind: "error"; status: number; detailText: string };
+
+/**
+ * GET /api/v1/approvals/{request_id} -- used after a refresh to confirm a cached 412's
+ * request_id is still genuinely PENDING before re-displaying it as "awaiting approval".
+ * Never throws on 404/other errors; callers decide how to degrade.
+ */
+export async function getApprovalRequest(
+  requestId: string,
+  workspaceId: string
+): Promise<ApprovalRequestOutcome> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/approvals/${encodeURIComponent(requestId)}`,
+    { method: "GET" },
+    workspaceId
+  );
+
+  if (res.status === 404) {
+    return { kind: "not_found" };
+  }
+  if (!res.ok) {
+    const { status, detailText } = await extractErrorDetail(res);
+    return { kind: "error", status, detailText };
+  }
+
+  const data: ApprovalRequestSummary = await res.json();
+  return { kind: "success", data };
+}
+
+export type ApprovalRequestListOutcome =
+  | { kind: "success"; data: ApprovalRequestSummary[] }
+  | { kind: "error"; status: number; detailText: string };
+
+/**
+ * GET /api/v1/approvals?status=PENDING -- used to discover a pending approval for a
+ * resumed "running" mission run whose own 412 was never seen by this browser (e.g. a
+ * later step's approval, or the original tab that received the 412 was closed before
+ * persisting it). Only exposes tool_name, never parameters/plan_preview -- callers must
+ * mark any approval card built from this as partial.
+ */
+export async function listPendingApprovals(workspaceId: string): Promise<ApprovalRequestListOutcome> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/approvals?status=PENDING&limit=200`,
+    { method: "GET" },
+    workspaceId
+  );
+
+  if (!res.ok) {
+    const { status, detailText } = await extractErrorDetail(res);
+    return { kind: "error", status, detailText };
+  }
+
+  const data: ApprovalRequestSummary[] = await res.json();
+  return { kind: "success", data };
+}
+
+// ---------------------------------------------------------------------------
+// Task AB (B3): read-only architectural analysis mission (/agent execute_analysis).
+// Mirrors executeSimpleMissionStep's non-throwing outcome classification so the UI can
+// treat an (unexpected, since this path is read-only) 412 the same way, without a
+// second code path -- see MissionApprovalCard.
+// ---------------------------------------------------------------------------
+
+export interface AnalysisMissionPayload {
+  workspace_id: string;
+  user_objective?: string;
+  client_request_id: string;
+  repositories?: string[];
+  domains?: string[];
+  evaluation_mode?: "single_model" | "two_model" | "tri_model_synthesis";
+  timeout_seconds?: number;
+}
+
+export interface AnalysisMissionResult {
+  mission_id: string;
+  status: string;
+  lifecycle_state: string;
+  inspected_repositories: string[];
+  inspected_domains: string[];
+  inspected_files_count: number;
+  findings_count: number;
+  critical_unresolved_count: number;
+  multi_model_result: Record<string, unknown>;
+  analysis_artifact_path?: string | null;
+  deliverables?: string | null;
+  artifacts?: Array<Record<string, unknown>> | null;
+  sealed_mrr?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  persistence_status?: "PERSISTED" | "NOT_PERSISTED" | "FAILED" | string;
+  persistence_error?: string | null;
+  error?: string | null;
+}
+
+export type AnalysisOutcome =
+  | { kind: "success"; data: AnalysisMissionResult }
+  | { kind: "approval_required"; detail: MissionApprovalDetail }
+  | { kind: "error"; status: number; detailText: string };
+
+/**
+ * POST /api/v1/missions/execute_analysis. Read-only: no cas_token_id field exists on this
+ * request, so there is no resume path -- a 412 here (not expected; the route does not
+ * currently map CASApprovalRequiredError to one) can only ever be shown, never resumed.
+ */
+export async function executeAnalysisMission(payload: AnalysisMissionPayload): Promise<AnalysisOutcome> {
+  assertWorkspaceMatch(payload.workspace_id);
+
+  const res = await fetchOrchestratorRaw(
+    "/api/v1/missions/execute_analysis",
+    { method: "POST", body: JSON.stringify(payload) },
+    payload.workspace_id
+  );
+
+  const bodyText = await res.text().catch(() => "");
+
+  if (res.status === 412) {
+    let parsed: unknown = {};
+    try {
+      parsed = bodyText ? JSON.parse(bodyText) : {};
+    } catch {
+      parsed = {};
+    }
+    const wrapper = parsed as { detail?: MissionApprovalDetail };
+    const detail = wrapper.detail ?? (parsed as MissionApprovalDetail);
+    return { kind: "approval_required", detail };
+  }
+
+  if (!res.ok) {
+    let detailText = bodyText || res.statusText;
+    try {
+      const parsed = bodyText ? JSON.parse(bodyText) : null;
+      if (parsed && typeof parsed === "object" && "detail" in parsed) {
+        const d = (parsed as { detail: unknown }).detail;
+        detailText = typeof d === "string" ? d : JSON.stringify(d);
+      }
+    } catch {
+      // Not JSON -- show the raw body verbatim.
+    }
+    return { kind: "error", status: res.status, detailText };
+  }
+
+  const data = bodyText ? JSON.parse(bodyText) : {};
+  return { kind: "success", data };
+}
