@@ -44,6 +44,7 @@ import {
   getMissionById,
   saveWorkspaceMission,
   cancelMission,
+  verifyMissionSeal,
   type MissionRecord,
   type AuthoritativeMissionStatus,
 } from "../services/orchestratorApi";
@@ -89,7 +90,11 @@ export const MissionsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMissionRunnerModal, setShowMissionRunnerModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
+  // Task AN (cancel-polish-20261124): tracks WHICH mission's cancel is in flight (not
+  // just a boolean) so the same cancel action/button can be driven from either the
+  // mission list rows or the detail view, for any mission the API itself reports as
+  // COMMITTED/RUNNING/DISPATCHED -- not only whichever one happens to be "active".
+  const [cancellingMissionId, setCancellingMissionId] = useState<string | null>(null);
   // Task AM (cancel-workspace-query-20261124): a failed cancel used to render in the
   // exact same neutral banner as a success message -- easy to miss, which is why the
   // click "appeared to do nothing" even though the backend's 422 detail text was
@@ -226,6 +231,41 @@ export const MissionsPage: React.FC = () => {
     return activeMission.plan.steps.find((s) => s.step_id === selectedStepId) || null;
   }, [activeMission, selectedStepId]);
 
+  // Task AN (cancel-polish-20261124): a FAILED mission never has the older DAG-
+  // orchestrator path's `verification.cryptographic_seal` (execute_simple/
+  // SimpleMissionLoop never populates it, failed or not) -- the seal card used to
+  // claim "No cryptographic MRR signature attached" for a mission that in fact DOES
+  // carry its own separately-signed MissionFailureRecord, just not the kind of seal
+  // that card was ever checking for. mission_failure_record_signature_valid only
+  // comes from GET .../verify-seal (the record signs itself, but verifying that
+  // signature requires the backend's public key), so it's fetched here rather than
+  // read off the mission record itself.
+  const [failureRecordSignatureValid, setFailureRecordSignatureValid] = useState<boolean | null>(null);
+  useEffect(() => {
+    setFailureRecordSignatureValid(null);
+    if (!activeMission || activeMission.status !== "FAILED" || !activeMission.mission_failure_record) {
+      return;
+    }
+    let cancelled = false;
+    verifyMissionSeal(activeMission.id, activeWorkspaceId)
+      .then((res) => {
+        if (!cancelled) {
+          setFailureRecordSignatureValid(
+            typeof res.mission_failure_record_signature_valid === "boolean"
+              ? res.mission_failure_record_signature_valid
+              : null
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFailureRecordSignatureValid(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMission?.id, activeMission?.status, activeWorkspaceId]);
+
   // Filtered Missions List
   const filteredMissions = useMemo(() => {
     return missions.filter((m) => {
@@ -254,6 +294,18 @@ export const MissionsPage: React.FC = () => {
     setSearchParams({});
   };
 
+  // Task AN (cancel-polish-20261124): a mission is cancellable purely by what the API
+  // itself reports as its current status -- COMMITTED (awaiting approval, nothing
+  // dispatched yet), RUNNING, or DISPATCHED (a node action in flight) -- matching
+  // exactly the backend's own _CANCELLABLE_LIFECYCLE_STATES (simple_loop.py). This is
+  // the raw `lifecycle_state` the GET /missions list endpoint sends as `status`
+  // (missions_routes.py's list_workspace_missions), not a UI-collapsed presentation
+  // value and not whether the mission happens to also have a browser-local "Resumed
+  // Execute-Mission Runs" entry -- a COMMITTED mission found only via a page-reloaded
+  // list (no local run entry at all) must be just as cancellable as one that does.
+  const isCancellableMissionStatus = (status: string) =>
+    status === "COMMITTED" || status === "RUNNING" || status === "DISPATCHED";
+
   // Cancel Running Mission
   // Task AK (live-test-findings-20261124) item 2/9: this used to call
   // cancelMissionJob (POST /agent/cancel), a route that was never actually wired up
@@ -261,24 +313,27 @@ export const MissionsPage: React.FC = () => {
   // exactly the "no way to cancel a running mission" the live test found. Rewired
   // to the real POST /api/v1/missions/{id}/cancel (item 2), and it never claims
   // the mission is cancelled unless the backend actually confirms it is.
-  const handleCancelMission = async () => {
-    if (!activeMission) return;
+  //
+  // Task AN: generalized to take any MissionRecord (not just whichever one is
+  // "active" in the detail view) so the exact same cancel flow drives both the
+  // mission list rows and the detail page.
+  const handleCancelMissionRecord = async (mission: MissionRecord) => {
     if (!window.confirm("Are you sure you want to terminate this mission?")) return;
 
-    setIsCancelling(true);
+    setCancellingMissionId(mission.id);
     setActionMessage(null);
 
     try {
-      const res = await cancelMission(activeMission.id, activeWorkspaceId);
+      const res = await cancelMission(mission.id, mission.workspace_id);
 
       const updated: MissionRecord = {
-        ...activeMission,
+        ...mission,
         status: res.lifecycle_state as AuthoritativeMissionStatus,
         updated_at: new Date().toISOString(),
         cancellation_reason: "MISSION_CANCELLED_BY_USER",
         mission_failure_record: res.mission_failure_record,
         execution_logs: [
-          ...(activeMission.execution_logs || []),
+          ...(mission.execution_logs || []),
           {
             timestamp: new Date().toISOString(),
             level: "warn",
@@ -298,7 +353,7 @@ export const MissionsPage: React.FC = () => {
       });
     } catch (err: unknown) {
       // Task AM (cancel-workspace-query-20261124): intentionally does NOT touch
-      // `activeMission`/`missions` here -- a failed cancel must leave the mission
+      // `mission`/`missions` here -- a failed cancel must leave the mission
       // showing exactly the status it already had (e.g. still "RUNNING"), never
       // silently marked cancelled/stopped when the backend never confirmed that.
       setActionMessage({
@@ -306,8 +361,13 @@ export const MissionsPage: React.FC = () => {
         kind: "error",
       });
     } finally {
-      setIsCancelling(false);
+      setCancellingMissionId(null);
     }
+  };
+
+  const handleCancelMission = () => {
+    if (!activeMission) return;
+    void handleCancelMissionRecord(activeMission);
   };
 
   // Task AK (live-test-findings-20261124) item 9: Cancel for a "Resumed Execute-
@@ -520,6 +580,45 @@ export const MissionsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Action Message Feedback
+          Task AM (cancel-workspace-query-20261124): an error used to render in this
+          exact same neutral gray box as a success message, which is why a failed
+          cancel "appeared to do nothing" -- the backend's detail text was technically
+          on the page but easy to miss. Error now gets its own visibly distinct
+          rose/alert styling.
+          Task AN (cancel-polish-20261124): hoisted out of the detail-view-only block
+          so a cancel triggered from a mission LIST row (which has no "active" mission
+          selected at all) still shows this feedback, not just a cancel from the detail
+          page. */}
+      {actionMessage && (
+        <div
+          className={
+            actionMessage.kind === "error"
+              ? "p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-xs font-mono text-rose-300 flex items-center justify-between gap-3"
+              : "p-3 bg-app-secondary border border-app-border rounded-lg text-xs font-mono text-app-text flex items-center justify-between gap-3"
+          }
+        >
+          <span className="flex items-center gap-2">
+            {actionMessage.kind === "error" ? (
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            )}
+            <span>{actionMessage.text}</span>
+          </span>
+          <button
+            onClick={() => setActionMessage(null)}
+            className={
+              actionMessage.kind === "error"
+                ? "text-rose-300/80 hover:text-rose-200 text-[10px] shrink-0"
+                : "text-app-muted hover:text-app-text text-[10px] shrink-0"
+            }
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Main Content Area */}
       {isLoading ? (
         <LoadingSkeleton />
@@ -560,14 +659,14 @@ export const MissionsPage: React.FC = () => {
 
             {/* Mission Action Controls */}
             <div className="flex flex-wrap items-center gap-2 border-t md:border-t-0 md:border-l border-app-border pt-3 md:pt-0 md:pl-5">
-              {activeMission.status === "RUNNING" && (
+              {isCancellableMissionStatus(activeMission.status) && (
                 <button
                   onClick={handleCancelMission}
-                  disabled={isCancelling}
+                  disabled={cancellingMissionId === activeMission.id}
                   className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <XCircle className="w-3.5 h-3.5" />
-                  <span>{isCancelling ? "Terminating..." : "Cancel Mission"}</span>
+                  <span>{cancellingMissionId === activeMission.id ? "Terminating..." : "Cancel Mission"}</span>
                 </button>
               )}
 
@@ -590,41 +689,6 @@ export const MissionsPage: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* Action Message Feedback
-              Task AM (cancel-workspace-query-20261124): an error used to render in this
-              exact same neutral gray box as a success message, which is why a failed
-              cancel "appeared to do nothing" -- the backend's detail text was technically
-              on the page but easy to miss. Error now gets its own visibly distinct
-              rose/alert styling. */}
-          {actionMessage && (
-            <div
-              className={
-                actionMessage.kind === "error"
-                  ? "p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-xs font-mono text-rose-300 flex items-center justify-between gap-3"
-                  : "p-3 bg-app-secondary border border-app-border rounded-lg text-xs font-mono text-app-text flex items-center justify-between gap-3"
-              }
-            >
-              <span className="flex items-center gap-2">
-                {actionMessage.kind === "error" ? (
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                )}
-                <span>{actionMessage.text}</span>
-              </span>
-              <button
-                onClick={() => setActionMessage(null)}
-                className={
-                  actionMessage.kind === "error"
-                    ? "text-rose-300/80 hover:text-rose-200 text-[10px] shrink-0"
-                    : "text-app-muted hover:text-app-text text-[10px] shrink-0"
-                }
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
 
           {/* Research Provenance Warning Banner if derived from synthetic demonstration */}
           {activeMission.research_provenance?.is_synthetic_demonstration && (
@@ -890,6 +954,30 @@ export const MissionsPage: React.FC = () => {
                         <span>Daemon Verified: Yes</span>
                       </div>
                     </div>
+                  ) : activeMission.status === "FAILED" && activeMission.mission_failure_record ? (
+                    // Task AN (cancel-polish-20261124): execute_simple/SimpleMissionLoop
+                    // never populates the older `verification.cryptographic_seal` field at
+                    // all (failed or not) -- "No cryptographic MRR signature attached" was
+                    // true but misleading for a FAILED mission, which in fact has its own,
+                    // separately-signed MissionFailureRecord. Show THAT record's real
+                    // signature validity instead.
+                    <div className="space-y-2 text-[11px] text-app-muted">
+                      <div className="flex items-center justify-between">
+                        <span className="text-app-dim">Failure record:</span>
+                        {failureRecordSignatureValid === null ? (
+                          <span className="text-app-dim">checking signature…</span>
+                        ) : failureRecordSignatureValid ? (
+                          <span className="text-emerald-400 font-semibold">signed ✓</span>
+                        ) : (
+                          <span className="text-rose-400 font-semibold">signed ✗</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-app-dim leading-relaxed">
+                        This mission failed before reaching a completed step's own MRR seal; the
+                        failed-step evidence below is attested by its own Ed25519-signed
+                        MissionFailureRecord instead.
+                      </p>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-app-dim">
                       No cryptographic MRR signature attached to this mission record.
@@ -1058,6 +1146,26 @@ export const MissionsPage: React.FC = () => {
                         {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
+                    {/* Task AN (cancel-polish-20261124): driven purely by the mission's own
+                        API-reported status (COMMITTED/RUNNING/DISPATCHED), not by whether it
+                        also happens to have a browser-local "Resumed Execute-Mission Runs"
+                        entry -- a COMMITTED mission found only via a reloaded list page had no
+                        way to be cancelled at all before this. stopPropagation keeps the click
+                        from also navigating into the detail view via the row's own onClick. */}
+                    {isCancellableMissionStatus(m.status) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleCancelMissionRecord(m);
+                        }}
+                        disabled={cancellingMissionId === m.id}
+                        title="Cancel this mission"
+                        className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold flex items-center gap-1 transition-colors disabled:opacity-50 shrink-0"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        <span>{cancellingMissionId === m.id ? "Cancelling..." : "Cancel"}</span>
+                      </button>
+                    )}
                     <ChevronRight className="w-4 h-4 text-app-muted" />
                   </div>
                 </div>

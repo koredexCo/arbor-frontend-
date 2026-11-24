@@ -953,6 +953,12 @@ export interface MissionVerifySealResponse {
   step_count?: number;
   final_link_hash?: string;
   has_mission_failure_record?: boolean;
+  // Task AN (cancel-polish-20261124): a FAILED mission's own signed MissionFailureRecord
+  // (additive, never a replacement for sealed_mrr/sealed_mission_chain -- see
+  // missions_routes.py's verify_mission_seal) carries its OWN signature validity,
+  // independent of `signature_valid` above, which is about the step-completion seal a
+  // failed mission typically never has at all.
+  mission_failure_record_signature_valid?: boolean;
   [key: string]: unknown;
 }
 

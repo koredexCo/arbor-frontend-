@@ -549,7 +549,28 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
               </div>
             )}
 
-            {finalResult.mission_failure_record && (
+            {/* Task AN (cancel-polish-20261124): an operator-requested cancel now comes
+                back as a normal 200 with status="CANCELLED" (backend item 1) and still
+                carries a mission_failure_record (failure_error_code
+                "MISSION_CANCELLED_BY_USER") for audit/attestation -- but this is the
+                outcome the user asked for, not a failure, so it gets its own neutral
+                message instead of falling into the red "Mission failure record" box
+                below (gated out for this status specifically). */}
+            {finalResult.status === "CANCELLED" && (
+              <div className="p-3.5 bg-app-secondary border border-app-border rounded-xl space-y-1.5 text-xs">
+                <div className="flex items-center gap-2 text-app-text font-semibold">
+                  <XCircle className="w-4 h-4 text-app-muted" />
+                  <span>Mission cancelled</span>
+                </div>
+                <p className="text-[11px] text-app-dim font-sans leading-relaxed">
+                  {finalResult.reconciliation_required
+                    ? "Cancelled by operator request -- the node did not confirm a clean stop, so this workspace may need reconciliation."
+                    : "Cancelled by operator request. No further action was taken."}
+                </p>
+              </div>
+            )}
+
+            {finalResult.mission_failure_record && finalResult.status !== "CANCELLED" && (
               <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-rose-400 font-semibold">
                   <AlertTriangle className="w-4 h-4" />
