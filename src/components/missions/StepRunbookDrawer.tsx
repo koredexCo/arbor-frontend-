@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   X,
   Wrench,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ArrowRight,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import type { PlanStepData } from "../../services/orchestratorApi";
 
@@ -25,6 +26,14 @@ export const StepRunbookDrawer: React.FC<StepRunbookDrawerProps> = ({
   onClose,
   onApproveCAS,
 }) => {
+  // Task AN item 8: per-step output (test.run's stdout/stderr, mcp.call_tool's
+  // returned text, ...) is collapsed by default -- re-collapses on switching to a
+  // different step rather than carrying one step's expanded state onto the next.
+  const [outputExpanded, setOutputExpanded] = useState(false);
+  useEffect(() => {
+    setOutputExpanded(false);
+  }, [step?.step_id]);
+
   if (!step) return null;
 
   return (
@@ -162,15 +171,22 @@ export const StepRunbookDrawer: React.FC<StepRunbookDrawerProps> = ({
         </div>
       )}
 
-      {/* Step Output Observations */}
+      {/* Step Output Observations -- collapsed by default (Task AN item 8) */}
       {step.output && (
         <div className="space-y-1">
-          <label className="text-[11px] font-semibold text-app-dim uppercase tracking-wider">
-            Step Execution Output / Observations
-          </label>
-          <pre className="p-3 bg-app-secondary rounded-lg border border-app-border text-[11px] font-mono text-app-text overflow-x-auto max-h-48 whitespace-pre-wrap">
-            {step.output}
-          </pre>
+          <button
+            type="button"
+            onClick={() => setOutputExpanded((v) => !v)}
+            className="flex items-center justify-between w-full text-left text-[11px] font-semibold text-app-dim uppercase tracking-wider hover:text-app-text transition-colors"
+          >
+            <span>Step Execution Output / Observations</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${outputExpanded ? "rotate-180" : ""}`} />
+          </button>
+          {outputExpanded && (
+            <pre className="p-3 bg-app-secondary rounded-lg border border-app-border text-[11px] font-mono text-app-text overflow-x-auto max-h-48 whitespace-pre-wrap">
+              {step.output}
+            </pre>
+          )}
         </div>
       )}
     </div>

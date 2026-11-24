@@ -42,11 +42,14 @@ import {
   getWorkspaceMissions,
   fetchWorkspaceMissions,
   getMissionById,
+  getMissionStatus,
   saveWorkspaceMission,
   cancelMission,
-  verifyMissionSeal,
+  formatStepOutput,
   type MissionRecord,
   type AuthoritativeMissionStatus,
+  type PlanStepData,
+  type SimpleMissionResponseData,
 } from "../services/orchestratorApi";
 import { removeMissionRun, type StoredMissionRun } from "../services/missionRunStore";
 import { reconcileMissionRuns } from "../services/missionRunReconciler";
@@ -220,51 +223,87 @@ export const MissionsPage: React.FC = () => {
   }, [activeWorkspaceId, missionIdParam]);
 
   // Active Selected Mission Record
-  const activeMission = useMemo(() => {
+  const baseActiveMission = useMemo(() => {
     if (!selectedMissionId) return null;
     return missions.find((m) => m.id === selectedMissionId) || null;
   }, [selectedMissionId, missions]);
 
-  // Selected Step Record for Drawer
-  const activeStep = useMemo(() => {
-    if (!activeMission || !activeMission.plan || !selectedStepId) return null;
-    return activeMission.plan.steps.find((s) => s.step_id === selectedStepId) || null;
-  }, [activeMission, selectedStepId]);
-
-  // Task AN (cancel-polish-20261124): a FAILED mission never has the older DAG-
-  // orchestrator path's `verification.cryptographic_seal` (execute_simple/
-  // SimpleMissionLoop never populates it, failed or not) -- the seal card used to
-  // claim "No cryptographic MRR signature attached" for a mission that in fact DOES
-  // carry its own separately-signed MissionFailureRecord, just not the kind of seal
-  // that card was ever checking for. mission_failure_record_signature_valid only
-  // comes from GET .../verify-seal (the record signs itself, but verifying that
-  // signature requires the backend's public key), so it's fetched here rather than
-  // read off the mission record itself.
-  const [failureRecordSignatureValid, setFailureRecordSignatureValid] = useState<boolean | null>(null);
+  // Task AN item 3/6: GET /api/v1/missions?workspace_id=... (the list call
+  // fetchWorkspaceMissions makes, which is all `missions`/baseActiveMission above
+  // ever came from) never carried signature_valid/step_count/final_link_hash/
+  // mission_failure_record_signature_valid/step_results at all -- only the
+  // single-mission GET /api/v1/missions/{id} does. The detail page used to show
+  // UNVERIFIED/0 steps for a real mission simply because it never called that
+  // endpoint. Fetched here, once per selected mission, and merged ON TOP of the
+  // list-based record (never replacing it -- title/objective/branch_id/etc. are
+  // not even present on this leaner GET response).
+  const [missionDetailOverlay, setMissionDetailOverlay] = useState<SimpleMissionResponseData | null>(null);
   useEffect(() => {
-    setFailureRecordSignatureValid(null);
-    if (!activeMission || activeMission.status !== "FAILED" || !activeMission.mission_failure_record) {
-      return;
-    }
+    setMissionDetailOverlay(null);
+    if (!selectedMissionId) return;
     let cancelled = false;
-    verifyMissionSeal(activeMission.id, activeWorkspaceId)
+    getMissionStatus(activeWorkspaceId, selectedMissionId)
       .then((res) => {
-        if (!cancelled) {
-          setFailureRecordSignatureValid(
-            typeof res.mission_failure_record_signature_valid === "boolean"
-              ? res.mission_failure_record_signature_valid
-              : null
-          );
-        }
+        if (!cancelled) setMissionDetailOverlay(res);
       })
       .catch(() => {
-        if (!cancelled) setFailureRecordSignatureValid(null);
+        if (!cancelled) setMissionDetailOverlay(null);
       });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMission?.id, activeMission?.status, activeWorkspaceId]);
+  }, [selectedMissionId, activeWorkspaceId]);
+
+  const activeMission = useMemo((): MissionRecord | null => {
+    if (!baseActiveMission) return null;
+    if (!missionDetailOverlay) return baseActiveMission;
+    return {
+      ...baseActiveMission,
+      signature_valid: missionDetailOverlay.signature_valid,
+      step_count: missionDetailOverlay.step_count,
+      final_link_hash: missionDetailOverlay.final_link_hash,
+      mission_failure_record_signature_valid: missionDetailOverlay.mission_failure_record_signature_valid,
+      step_results: missionDetailOverlay.step_results ?? baseActiveMission.step_results,
+      not_executed_steps: missionDetailOverlay.not_executed_steps ?? baseActiveMission.not_executed_steps,
+      mission_failure_record: missionDetailOverlay.mission_failure_record ?? baseActiveMission.mission_failure_record,
+    };
+  }, [baseActiveMission, missionDetailOverlay]);
+
+  // Task AN item 3/6: execute_simple/SimpleMissionLoop missions never populate the
+  // older DAG-orchestrator `plan.steps` field at all -- the Execution Graph, Steps
+  // Runbook tab/table, and step drawer below were all built against that one shape,
+  // so every one of them silently showed "(0)"/empty for a real mission. Rather
+  // than rewrite three separately-shaped components, synthesize the SAME
+  // PlanStepData[] shape from step_results/not_executed_steps (now returned by GET
+  // /api/v1/missions/{id} -- item 3) whenever there's no real `plan` to read, so
+  // the existing Graph/Runbook/Drawer UI works unchanged for both mission kinds.
+  const effectivePlanSteps = useMemo((): PlanStepData[] => {
+    if (activeMission?.plan?.steps && activeMission.plan.steps.length > 0) {
+      return activeMission.plan.steps;
+    }
+    if (!activeMission) return [];
+    const completed: PlanStepData[] = (activeMission.step_results || []).map((s) => ({
+      step_id: s.step_id,
+      action: s.tool_name || "unknown",
+      tool_name: s.tool_name,
+      description: `Dispatched tool: ${s.tool_name || "unknown"}${s.exit_code != null ? ` (exit_code=${s.exit_code})` : ""}`,
+      status: "completed",
+      output: formatStepOutput(s.output),
+    }));
+    const remaining: PlanStepData[] = (activeMission.not_executed_steps || []).map((s) => ({
+      step_id: s.step_id,
+      action: s.action || "unknown",
+      description: s.action ? `Not executed: ${s.action}` : "Not executed.",
+      status: "skipped" as const,
+    }));
+    return [...completed, ...remaining];
+  }, [activeMission]);
+
+  // Selected Step Record for Drawer
+  const activeStep = useMemo(() => {
+    if (!selectedStepId) return null;
+    return effectivePlanSteps.find((s) => s.step_id === selectedStepId) || null;
+  }, [effectivePlanSteps, selectedStepId]);
 
   // Filtered Missions List
   const filteredMissions = useMemo(() => {
@@ -711,7 +750,7 @@ export const MissionsPage: React.FC = () => {
             <div className="flex items-center gap-1">
               {[
                 { id: "GRAPH", label: "Execution Graph (DAG)" },
-                { id: "RUNBOOK", label: `Steps Runbook (${activeMission.plan?.steps?.length || 0})` },
+                { id: "RUNBOOK", label: `Steps Runbook (${effectivePlanSteps.length})` },
                 { id: "DELIVERABLES", label: "Deliverables & Report" },
                 { id: "VERIFICATION", label: "Evidence & Verification" },
                 { id: "AUDIT", label: "Audit & Checkpoints" },
@@ -737,7 +776,7 @@ export const MissionsPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <ExecutionGraphView
-                  steps={activeMission.plan?.steps || []}
+                  steps={effectivePlanSteps}
                   selectedStepId={selectedStepId}
                   onSelectStep={(sid) => setSelectedStepId(sid)}
                   allowsBranching={activeMission.plan?.allows_branching ?? true}
@@ -770,7 +809,7 @@ export const MissionsPage: React.FC = () => {
               <div className="p-4 border-b border-app-border flex items-center justify-between text-xs">
                 <span className="font-semibold text-app-text">Plan Steps Ledger</span>
                 <span className="font-mono text-app-dim text-[11px]">
-                  {activeMission.plan?.steps?.length || 0} Total Steps
+                  {effectivePlanSteps.length} Total Steps
                 </span>
               </div>
 
@@ -788,7 +827,7 @@ export const MissionsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-app-border">
-                    {(activeMission.plan?.steps || []).map((step) => (
+                    {effectivePlanSteps.map((step) => (
                       <tr
                         key={step.step_id}
                         onClick={() => setSelectedStepId(step.step_id)}
@@ -954,19 +993,49 @@ export const MissionsPage: React.FC = () => {
                         <span>Daemon Verified: Yes</span>
                       </div>
                     </div>
+                  ) : typeof activeMission.signature_valid === "boolean" ? (
+                    // Task AN item 3/6: execute_simple/SimpleMissionLoop missions never
+                    // populate the older `verification.cryptographic_seal` field, but GET
+                    // /api/v1/missions/{id} now carries the same re-verified
+                    // signature_valid/step_count/final_link_hash a verify-seal call would
+                    // -- read directly from the mission record already fetched, no second
+                    // round trip.
+                    <div className="space-y-2 text-[11px] text-app-muted">
+                      <div className="flex items-center justify-between">
+                        <span className="text-app-dim">Seal verification:</span>
+                        {activeMission.signature_valid ? (
+                          <span className="text-emerald-400 font-semibold">valid ✓</span>
+                        ) : (
+                          <span className="text-rose-400 font-semibold">invalid ✗</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-app-dim">
+                        <span>Step count:</span>
+                        <span className="text-app-text">{activeMission.step_count ?? "—"}</span>
+                      </div>
+                      {activeMission.final_link_hash && (
+                        <div>
+                          <span className="text-app-dim">Final link hash:</span>
+                          <div className="p-1.5 rounded bg-app-secondary border border-app-border text-app-dim truncate mt-0.5 text-[10px]">
+                            {activeMission.final_link_hash}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : activeMission.status === "FAILED" && activeMission.mission_failure_record ? (
-                    // Task AN (cancel-polish-20261124): execute_simple/SimpleMissionLoop
-                    // never populates the older `verification.cryptographic_seal` field at
-                    // all (failed or not) -- "No cryptographic MRR signature attached" was
-                    // true but misleading for a FAILED mission, which in fact has its own,
-                    // separately-signed MissionFailureRecord. Show THAT record's real
-                    // signature validity instead.
+                    // execute_simple/SimpleMissionLoop never populates
+                    // `verification.cryptographic_seal` for a FAILED mission either --
+                    // "No cryptographic MRR signature attached" was true but misleading,
+                    // since this mission in fact carries its own, separately-signed
+                    // MissionFailureRecord. Show THAT record's real signature validity,
+                    // read directly from the mission record (GET /api/v1/missions/{id},
+                    // item 3) instead of a second verify-seal round trip.
                     <div className="space-y-2 text-[11px] text-app-muted">
                       <div className="flex items-center justify-between">
                         <span className="text-app-dim">Failure record:</span>
-                        {failureRecordSignatureValid === null ? (
-                          <span className="text-app-dim">checking signature…</span>
-                        ) : failureRecordSignatureValid ? (
+                        {typeof activeMission.mission_failure_record_signature_valid !== "boolean" ? (
+                          <span className="text-app-dim">unknown</span>
+                        ) : activeMission.mission_failure_record_signature_valid ? (
                           <span className="text-emerald-400 font-semibold">signed ✓</span>
                         ) : (
                           <span className="text-rose-400 font-semibold">signed ✗</span>

@@ -109,6 +109,17 @@ export interface SimpleMissionResponseData {
   sealed_mrr?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error?: string;
+  // Task AN item 3: GET /api/v1/missions/{id} (getMissionStatus below) now carries
+  // the same re-verified signature_valid/step_count/final_link_hash/mission_
+  // failure_record_signature_valid a GET .../verify-seal call would -- and the
+  // per-step results (with each step's own bounded/scrubbed tool output, item 4).
+  signature_valid?: boolean | null;
+  step_count?: number | null;
+  final_link_hash?: string | null;
+  mission_failure_record_signature_valid?: boolean | null;
+  step_results?: MissionStepResult[] | null;
+  not_executed_steps?: MissionNotExecutedStep[] | null;
+  mission_failure_record?: MissionFailureRecord | null;
 }
 
 export interface StatusPresentation {
@@ -345,6 +356,17 @@ export interface MissionRecord {
   // that never failed this way.
   cancellation_reason?: string | null;
   mission_failure_record?: MissionFailureRecord | null;
+  // Task AN item 3: carried directly on GET /api/v1/missions/{id} now (the SAME
+  // re-verified fields GET .../verify-seal computes), so the detail page reads
+  // them from the one mission fetch it already does instead of a second,
+  // never-actually-wired-up verify-seal round trip. None/undefined for a mission
+  // with nothing sealed yet (e.g. still RUNNING).
+  signature_valid?: boolean | null;
+  step_count?: number | null;
+  final_link_hash?: string | null;
+  mission_failure_record_signature_valid?: boolean | null;
+  step_results?: MissionStepResult[] | null;
+  not_executed_steps?: MissionNotExecutedStep[] | null;
 }
 
 export interface OrchestrationResponseData {
@@ -660,6 +682,49 @@ export interface MissionStepResult {
   tool_name?: string;
   status: string;
   exit_code?: number | null;
+  // Task AN item 4: the tool's own returned output for this step (test.run's
+  // stdout/stderr, mcp.call_tool's returned content, ...) -- already bounded and
+  // scrubbed by the backend (_bounded_step_output). Shape varies by tool, so this
+  // stays untyped here; see formatStepOutput below for how the UI extracts
+  // something readable from it regardless of tool.
+  output?: Record<string, unknown> | null;
+}
+
+/**
+ * Task AN item 4/8: extracts a short, human-readable string from a step's own
+ * `output` (whatever shape that tool returns) for display, collapsed by default,
+ * in the Evidence & Verification tab and the Steps Runbook drawer. Returns null
+ * when there is nothing worth showing.
+ */
+export function formatStepOutput(output: unknown): string | null {
+  if (!output || typeof output !== "object") return null;
+  const obj = output as Record<string, unknown>;
+  const result = (obj.result && typeof obj.result === "object" ? obj.result : obj) as Record<string, unknown>;
+
+  const content = result.content;
+  if (Array.isArray(content)) {
+    const texts = content
+      .filter((item): item is { type?: string; text?: string } => typeof item === "object" && item !== null)
+      .filter((item) => item.type === "text" && typeof item.text === "string")
+      .map((item) => item.text as string);
+    if (texts.length > 0) return texts.join("\n");
+  }
+
+  const stdout = typeof result.stdout === "string" ? result.stdout : "";
+  const stderr = typeof result.stderr === "string" ? result.stderr : "";
+  if (stdout || stderr) {
+    let combined = "";
+    if (stdout) combined += `stdout:\n${stdout}`;
+    if (stderr) combined += combined ? `\nstderr:\n${stderr}` : `stderr:\n${stderr}`;
+    return combined;
+  }
+
+  try {
+    const json = JSON.stringify(obj, null, 2);
+    return json === "{}" ? null : json;
+  } catch {
+    return null;
+  }
 }
 
 export interface MissionNotExecutedStep {

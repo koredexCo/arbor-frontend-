@@ -12,6 +12,7 @@ import {
   Loader2,
   FileCheck2,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import {
   executeSimpleMissionStep,
@@ -22,6 +23,7 @@ import {
   resolveNodeApprovalMode,
   resolveRequiresStrongConfirmation,
   resolveResumingBannerText,
+  formatStepOutput,
   type MissionApprovalDetail,
   type ExecuteSimpleFinalResponse,
   type MissionVerifySealResponse,
@@ -87,6 +89,9 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
   const [isRejecting, setIsRejecting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [hasDeliverables, setHasDeliverables] = useState(false);
+  // Task AN item 8: which per-step rows have their output expanded -- collapsed by
+  // default, independently toggleable per step_id.
+  const [expandedStepIds, setExpandedStepIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   // Task U: captured from approvalDetail.node_approval_mode at the moment Approve is
   // clicked, since approvalDetail itself is cleared before the "resuming" banner renders.
@@ -121,6 +126,7 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setVerifySealError(null);
     setConfirmText("");
     setHasDeliverables(false);
+    setExpandedStepIds(new Set());
   };
 
   // Task AK (live-test-findings-20261124) item 9: closing this modal while a mission
@@ -514,19 +520,47 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
                   Per-step results
                 </span>
                 <div className="space-y-1">
-                  {finalResult.step_results.map((r) => (
-                    <div
-                      key={r.step_id}
-                      className="p-2 bg-app-secondary border border-app-border rounded text-[11px] font-mono flex items-center justify-between"
-                    >
-                      <span className="text-app-text">
-                        {r.step_id} [{r.tool_name ?? "—"}]
-                      </span>
-                      <span className="text-app-dim">
-                        {r.status} (exit_code={r.exit_code ?? "—"})
-                      </span>
-                    </div>
-                  ))}
+                  {finalResult.step_results.map((r) => {
+                    // Task AN item 4/8: the tool's own returned output (test.run's
+                    // stdout/stderr, mcp.call_tool's returned text, ...) -- collapsed
+                    // by default, toggled open per step_id, instead of only ever
+                    // showing "COMPLETED (exit_code=0)" with no way to see what the
+                    // step actually did.
+                    const formattedOutput = formatStepOutput(r.output);
+                    const isExpanded = expandedStepIds.has(r.step_id);
+                    return (
+                      <div key={r.step_id} className="bg-app-secondary border border-app-border rounded text-[11px] font-mono">
+                        <button
+                          type="button"
+                          disabled={!formattedOutput}
+                          onClick={() =>
+                            setExpandedStepIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(r.step_id)) next.delete(r.step_id);
+                              else next.add(r.step_id);
+                              return next;
+                            })
+                          }
+                          className="w-full p-2 flex items-center justify-between gap-2 text-left disabled:cursor-default"
+                        >
+                          <span className="text-app-text flex items-center gap-1.5">
+                            {formattedOutput && (
+                              <ChevronDown className={`w-3 h-3 text-app-dim shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            )}
+                            {r.step_id} [{r.tool_name ?? "—"}]
+                          </span>
+                          <span className="text-app-dim">
+                            {r.status} (exit_code={r.exit_code ?? "—"})
+                          </span>
+                        </button>
+                        {isExpanded && formattedOutput && (
+                          <pre className="mx-2 mb-2 p-2 bg-app-tertiary border border-app-border rounded text-[11px] font-mono text-app-text overflow-x-auto max-h-48 whitespace-pre-wrap">
+                            {formattedOutput}
+                          </pre>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
