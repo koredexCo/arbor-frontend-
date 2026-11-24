@@ -822,8 +822,13 @@ export async function cancelMission(
   missionId: string,
   workspaceId: string
 ): Promise<CancelMissionResponse> {
+  // Task AM (cancel-workspace-query-20261124): missions_routes.py's cancel_mission
+  // requires workspace_id as a query param (same as GET .../missions/{id} above) --
+  // fetchOrchestratorRaw only ever sends it as the X-Workspace-ID header, so this
+  // call was missing the query param the backend actually requires and failed with
+  // a 422 on every click.
   const res = await fetchOrchestratorRaw(
-    `/api/v1/missions/${encodeURIComponent(missionId)}/cancel`,
+    `/api/v1/missions/${encodeURIComponent(missionId)}/cancel?workspace_id=${encodeURIComponent(workspaceId)}`,
     { method: "POST" },
     workspaceId
   );

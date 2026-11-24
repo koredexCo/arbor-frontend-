@@ -90,7 +90,11 @@ export const MissionsPage: React.FC = () => {
   const [showMissionRunnerModal, setShowMissionRunnerModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  // Task AM (cancel-workspace-query-20261124): a failed cancel used to render in the
+  // exact same neutral banner as a success message -- easy to miss, which is why the
+  // click "appeared to do nothing" even though the backend's 422 detail text was
+  // technically already in the DOM. "error" gets its own visibly distinct styling below.
+  const [actionMessage, setActionMessage] = useState<{ text: string; kind: "info" | "error" } | null>(null);
   // Task AK (live-test-findings-20261124) item 9: which "Resumed Execute-Mission
   // Runs" row's Cancel button is in flight, keyed by clientRequestId -- each row
   // cancels independently of the others and of the main activeMission cancel above.
@@ -286,15 +290,21 @@ export const MissionsPage: React.FC = () => {
       };
       saveWorkspaceMission(updated);
       setMissions(getWorkspaceMissions(activeWorkspaceId));
-      setActionMessage(
-        res.reconciliation_required
+      setActionMessage({
+        text: res.reconciliation_required
           ? "Mission cancelled -- the node did not confirm a clean stop, so this workspace may need reconciliation."
-          : "Mission successfully cancelled."
-      );
+          : "Mission successfully cancelled.",
+        kind: "info",
+      });
     } catch (err: unknown) {
-      setActionMessage(
-        err instanceof Error ? `Cancellation failed: ${err.message}` : "Cancellation error"
-      );
+      // Task AM (cancel-workspace-query-20261124): intentionally does NOT touch
+      // `activeMission`/`missions` here -- a failed cancel must leave the mission
+      // showing exactly the status it already had (e.g. still "RUNNING"), never
+      // silently marked cancelled/stopped when the backend never confirmed that.
+      setActionMessage({
+        text: err instanceof Error ? `Cancellation failed: ${err.message}` : "Cancellation error",
+        kind: "error",
+      });
     } finally {
       setIsCancelling(false);
     }
@@ -314,7 +324,7 @@ export const MissionsPage: React.FC = () => {
       await cancelMission(run.missionId, run.workspaceId);
       removeMissionRun(run.workspaceId, run.clientRequestId);
       setActiveRuns((prev) => prev.filter((r) => r.clientRequestId !== run.clientRequestId));
-      setActionMessage("Mission run cancelled.");
+      setActionMessage({ text: "Mission run cancelled.", kind: "info" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("(409)")) {
@@ -322,9 +332,12 @@ export const MissionsPage: React.FC = () => {
         // here rather than leaving a dead "Running"/"Review Approval" row behind.
         removeMissionRun(run.workspaceId, run.clientRequestId);
         setActiveRuns((prev) => prev.filter((r) => r.clientRequestId !== run.clientRequestId));
-        setActionMessage("That mission run had already reached a terminal state.");
+        setActionMessage({ text: "That mission run had already reached a terminal state.", kind: "info" });
       } else {
-        setActionMessage(`Cancellation failed: ${message}`);
+        // Task AM: the run row is intentionally left in place (not removed, not
+        // marked cancelled) -- the backend never confirmed the cancel, so it must
+        // keep showing as still running/awaiting approval.
+        setActionMessage({ text: `Cancellation failed: ${message}`, kind: "error" });
       }
     } finally {
       setCancellingRunId(null);
@@ -578,11 +591,36 @@ export const MissionsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Action Message Feedback */}
+          {/* Action Message Feedback
+              Task AM (cancel-workspace-query-20261124): an error used to render in this
+              exact same neutral gray box as a success message, which is why a failed
+              cancel "appeared to do nothing" -- the backend's detail text was technically
+              on the page but easy to miss. Error now gets its own visibly distinct
+              rose/alert styling. */}
           {actionMessage && (
-            <div className="p-3 bg-app-secondary border border-app-border rounded-lg text-xs font-mono text-app-text flex items-center justify-between">
-              <span>{actionMessage}</span>
-              <button onClick={() => setActionMessage(null)} className="text-app-muted hover:text-app-text text-[10px]">
+            <div
+              className={
+                actionMessage.kind === "error"
+                  ? "p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-xs font-mono text-rose-300 flex items-center justify-between gap-3"
+                  : "p-3 bg-app-secondary border border-app-border rounded-lg text-xs font-mono text-app-text flex items-center justify-between gap-3"
+              }
+            >
+              <span className="flex items-center gap-2">
+                {actionMessage.kind === "error" ? (
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                )}
+                <span>{actionMessage.text}</span>
+              </span>
+              <button
+                onClick={() => setActionMessage(null)}
+                className={
+                  actionMessage.kind === "error"
+                    ? "text-rose-300/80 hover:text-rose-200 text-[10px] shrink-0"
+                    : "text-app-muted hover:text-app-text text-[10px] shrink-0"
+                }
+              >
                 Dismiss
               </button>
             </div>
