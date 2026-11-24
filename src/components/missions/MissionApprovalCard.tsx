@@ -6,6 +6,42 @@ import {
   type MissionApprovalDetail,
 } from "../../services/orchestratorApi";
 
+/**
+ * Task AM (cancel-workspace-query-20261124): navigator.clipboard.writeText can
+ * reject or simply be unavailable (e.g. no secure-context clipboard permission
+ * in the user's actual browser/embedding, even on http://localhost) with no
+ * visible error -- the button just appeared to do nothing. Falls back to a
+ * hidden textarea + document.execCommand("copy") so the copy still works, and
+ * only reports success (letting the caller show its "Copied" state) when one
+ * of the two actually succeeded.
+ */
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to the execCommand fallback below.
+    }
+  }
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 interface MissionApprovalCardProps {
   approvalDetail: MissionApprovalDetail;
   /** True when this detail was reconstructed after a refresh and lacks real parameters/plan_preview. */
@@ -52,9 +88,11 @@ export const MissionApprovalCard: React.FC<MissionApprovalCardProps> = ({
   const confirmationSatisfied = !requiresStrongConfirmation || confirmText === confirmationTargetId;
   const [copied, setCopied] = useState(false);
   const handleCopyConfirmationId = async () => {
-    await navigator.clipboard.writeText(confirmationTargetId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const ok = await copyTextToClipboard(confirmationTargetId);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -135,20 +173,31 @@ export const MissionApprovalCard: React.FC<MissionApprovalCardProps> = ({
 
       {actionsEnabled && requiresStrongConfirmation && (
         <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg space-y-1.5">
-          <label className="text-[11px] text-rose-300 font-semibold flex items-center gap-1.5 flex-wrap">
-            <span>
-              High-risk step -- type the exact {isRealStepId ? "step id" : "approval request id"} (
-            </span>
-            <span className="font-mono">{confirmationTargetId}</span>
-            <button
-              type="button"
-              onClick={handleCopyConfirmationId}
-              title="Copy to clipboard"
-              className="p-0.5 rounded text-rose-300/80 hover:text-rose-200 hover:bg-rose-500/20 transition-colors"
-            >
-              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            </button>
-            <span>) to enable Approve:</span>
+          {/* Task AM (cancel-workspace-query-20261124): the label/id/button/")..." text
+              used to be split across separate flex-item <span>s inside a flex-wrap
+              row, so a narrow card could wrap the ") to enable Approve:" item onto its
+              own line, leaving a lone ")" dangling at the start of a line. Rendered as
+              one normal inline flow instead (no flex), with the copy button as an
+              inline-block, so the parenthesis stays attached to its surrounding text
+              exactly like any other wrapped sentence. */}
+          <label className="text-[11px] text-rose-300 font-semibold leading-relaxed">
+            High-risk step -- type the exact {isRealStepId ? "step id" : "approval request id"}{" "}
+            {/* whitespace-nowrap on this whole span -- not just the id -- keeps "(id[copy])"
+                together as one unbreakable unit, so the line can only wrap before or after
+                it, never between the copy button and its closing ")". */}
+            <span className="whitespace-nowrap">
+              (<span className="font-mono">{confirmationTargetId}</span>
+              <button
+                type="button"
+                onClick={handleCopyConfirmationId}
+                title="Copy to clipboard"
+                className="inline-flex items-center align-middle mx-0.5 p-0.5 rounded text-rose-300/80 hover:text-rose-200 hover:bg-rose-500/20 transition-colors"
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
+              )
+            </span>{" "}
+            to enable Approve:
           </label>
           <input
             type="text"
