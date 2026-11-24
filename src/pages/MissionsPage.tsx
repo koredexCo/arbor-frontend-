@@ -43,11 +43,11 @@ import {
   fetchWorkspaceMissions,
   getMissionById,
   saveWorkspaceMission,
-  cancelMissionJob,
+  cancelMission,
   type MissionRecord,
   type AuthoritativeMissionStatus,
 } from "../services/orchestratorApi";
-import { type StoredMissionRun } from "../services/missionRunStore";
+import { removeMissionRun, type StoredMissionRun } from "../services/missionRunStore";
 import { reconcileMissionRuns } from "../services/missionRunReconciler";
 import {
   getAuthoritativeWorkspaceId,
@@ -91,6 +91,10 @@ export const MissionsPage: React.FC = () => {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  // Task AK (live-test-findings-20261124) item 9: which "Resumed Execute-Mission
+  // Runs" row's Cancel button is in flight, keyed by clientRequestId -- each row
+  // cancels independently of the others and of the main activeMission cancel above.
+  const [cancellingRunId, setCancellingRunId] = useState<string | null>(null);
 
   // Task AB (B2): execute_simple runs restored from localStorage and re-verified
   // against the backend -- never shown as live without that re-verification.
@@ -247,39 +251,83 @@ export const MissionsPage: React.FC = () => {
   };
 
   // Cancel Running Mission
+  // Task AK (live-test-findings-20261124) item 2/9: this used to call
+  // cancelMissionJob (POST /agent/cancel), a route that was never actually wired up
+  // on the backend -- this button has been a silent 404 the whole time, which is
+  // exactly the "no way to cancel a running mission" the live test found. Rewired
+  // to the real POST /api/v1/missions/{id}/cancel (item 2), and it never claims
+  // the mission is cancelled unless the backend actually confirms it is.
   const handleCancelMission = async () => {
     if (!activeMission) return;
-    if (!window.confirm("Are you sure you want to terminate this autonomous mission?")) return;
+    if (!window.confirm("Are you sure you want to terminate this mission?")) return;
 
     setIsCancelling(true);
     setActionMessage(null);
 
     try {
-      const jobId = activeMission.active_job_id || activeMission.id;
-      const res = await cancelMissionJob(activeWorkspaceId, jobId);
+      const res = await cancelMission(activeMission.id, activeWorkspaceId);
 
       const updated: MissionRecord = {
         ...activeMission,
-        status: "CANCELLED",
+        status: res.lifecycle_state as AuthoritativeMissionStatus,
         updated_at: new Date().toISOString(),
+        cancellation_reason: "MISSION_CANCELLED_BY_USER",
+        mission_failure_record: res.mission_failure_record,
         execution_logs: [
           ...(activeMission.execution_logs || []),
           {
             timestamp: new Date().toISOString(),
             level: "warn",
-            message: "Mission execution terminated by operator cancel signal.",
+            message: res.job_cancelled
+              ? `Mission execution terminated by operator cancel signal (node job confirmed=${res.job_confirmed}).`
+              : "Mission marked cancelled by operator (no node job was actively running).",
           },
         ],
       };
       saveWorkspaceMission(updated);
       setMissions(getWorkspaceMissions(activeWorkspaceId));
-      setActionMessage("Mission successfully cancelled.");
+      setActionMessage(
+        res.reconciliation_required
+          ? "Mission cancelled -- the node did not confirm a clean stop, so this workspace may need reconciliation."
+          : "Mission successfully cancelled."
+      );
     } catch (err: unknown) {
       setActionMessage(
         err instanceof Error ? `Cancellation failed: ${err.message}` : "Cancellation error"
       );
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  // Task AK (live-test-findings-20261124) item 9: Cancel for a "Resumed Execute-
+  // Mission Runs" row -- covers both a dispatched (RUNNING) row and one still
+  // awaiting approval (COMMITTED), since item 2's backend endpoint handles both.
+  // Never removes the row from storage on failure -- only a confirmed cancel
+  // (or an already-terminal 409, which means it's already decided) does.
+  const handleCancelActiveRun = async (run: StoredMissionRun) => {
+    if (!run.missionId) return;
+    if (!window.confirm("Are you sure you want to cancel this mission run?")) return;
+
+    setCancellingRunId(run.clientRequestId);
+    try {
+      await cancelMission(run.missionId, run.workspaceId);
+      removeMissionRun(run.workspaceId, run.clientRequestId);
+      setActiveRuns((prev) => prev.filter((r) => r.clientRequestId !== run.clientRequestId));
+      setActionMessage("Mission run cancelled.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("(409)")) {
+        // Already in a terminal state -- nothing left to cancel; stop tracking it
+        // here rather than leaving a dead "Running"/"Review Approval" row behind.
+        removeMissionRun(run.workspaceId, run.clientRequestId);
+        setActiveRuns((prev) => prev.filter((r) => r.clientRequestId !== run.clientRequestId));
+        setActionMessage("That mission run had already reached a terminal state.");
+      } else {
+        setActionMessage(`Cancellation failed: ${message}`);
+      }
+    } finally {
+      setCancellingRunId(null);
     }
   };
 
@@ -423,20 +471,36 @@ export const MissionsPage: React.FC = () => {
                     mission {run.missionId} -- started {new Date(run.startedAt).toLocaleTimeString()}
                   </div>
                 </div>
-                {run.phase === "awaiting_approval" ? (
-                  <button
-                    onClick={() => setResumeTarget(run)}
-                    className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Review Approval
-                  </button>
-                ) : (
-                  <span className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono text-sky-400">
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    Running
-                  </span>
-                )}
+                <div className="shrink-0 flex items-center gap-2">
+                  {run.phase === "awaiting_approval" ? (
+                    <button
+                      onClick={() => setResumeTarget(run)}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Review Approval
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-[11px] font-mono text-sky-400">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Running
+                    </span>
+                  )}
+                  {/* Task AK (live-test-findings-20261124) item 9: Cancel for either
+                      state -- a RUNNING row with a node action in flight, or one still
+                      COMMITTED awaiting approval -- item 2's backend endpoint handles
+                      both. */}
+                  {run.missionId && (
+                    <button
+                      onClick={() => handleCancelActiveRun(run)}
+                      disabled={cancellingRunId === run.clientRequestId}
+                      className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[11px] font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      {cancellingRunId === run.clientRequestId ? "Cancelling..." : "Cancel"}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -699,6 +763,35 @@ export const MissionsPage: React.FC = () => {
           {/* TAB 4: EVIDENCE & VERIFICATION */}
           {activeDetailTab === "VERIFICATION" && (
             <div className="space-y-6">
+              {/* Task AK (live-test-findings-20261124) item 8: a FAILED execute_simple
+                  mission never has verification/sealed_mrr (the older DAG-orchestrator
+                  path's own fields) -- shown here instead, so a failed mission is never
+                  left looking unexplained just because it took a different path through
+                  the backend than the cards below assume. */}
+              {activeMission.mission_failure_record && (
+                <div className="p-5 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-rose-400 font-semibold">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Mission failed</span>
+                  </div>
+                  {activeMission.cancellation_reason && (
+                    <div className="font-mono text-[11px] text-rose-200 font-semibold">
+                      {activeMission.cancellation_reason}
+                    </div>
+                  )}
+                  <div className="font-mono text-[11px] text-rose-200 space-y-1 pt-1">
+                    <div>failed_step_id: {activeMission.mission_failure_record.failed_step_id ?? "—"}</div>
+                    <div>failed_tool_name: {activeMission.mission_failure_record.failed_tool_name ?? "—"}</div>
+                    <div>exit_code: {activeMission.mission_failure_record.exit_code ?? "—"}</div>
+                  </div>
+                  {activeMission.mission_failure_record.output_tail && (
+                    <pre className="p-2.5 bg-rose-950/40 border border-rose-800/60 rounded text-[11px] font-mono text-rose-200 overflow-x-auto overflow-y-auto max-h-48 whitespace-pre-wrap">
+                      {activeMission.mission_failure_record.output_tail}
+                    </pre>
+                  )}
+                </div>
+              )}
+
               {/* Separate Verification Outcome from Raw Execution */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-5 bg-app-card border border-app-border rounded-xl space-y-3">

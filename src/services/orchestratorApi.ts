@@ -339,6 +339,12 @@ export interface MissionRecord {
   active_job_id?: string;
   graph_id?: string;
   error?: string | null;
+  // Task AK (live-test-findings-20261124) item 8: a FAILED execute_simple mission
+  // never has verification/sealed_mrr (those are the older DAG-orchestrator path's
+  // own fields) -- these are its own explanation, additive, None for every mission
+  // that never failed this way.
+  cancellation_reason?: string | null;
+  mission_failure_record?: MissionFailureRecord | null;
 }
 
 export interface OrchestrationResponseData {
@@ -412,22 +418,6 @@ export async function compareModelsTask(payload: {
   const res = await fetchWithAuth("/agent/compare", {
     method: "POST",
     body: JSON.stringify(payload),
-  });
-  return await res.json();
-}
-
-/**
- * Cancels a running agent process tree (/agent/cancel).
- */
-export async function cancelMissionJob(workspaceId: string, jobId: string): Promise<{ status: string; cancelled: boolean }> {
-  assertWorkspaceMatch(workspaceId);
-
-  const res = await fetchWithAuth("/agent/cancel", {
-    method: "POST",
-    body: JSON.stringify({
-      workspace_id: workspaceId,
-      job_id: jobId,
-    }),
   });
   return await res.json();
 }
@@ -680,19 +670,34 @@ export interface MissionNotExecutedStep {
 export interface MissionFailureRecord {
   failed_step_id?: string;
   failed_tool_name?: string;
+  failure_error_code?: string;
   exit_code?: number | null;
   output_tail?: string;
+}
+
+/**
+ * Task AK (live-test-findings-20261124) item 3/7: test.run's own dispatch result
+ * (stdout/stderr/exit_code/duration_ms) -- present only when the mission's dispatched
+ * tool was "test.run"; null/absent for every other tool.
+ */
+export interface MissionTestRunResult {
+  stdout?: string | null;
+  stderr?: string | null;
+  exit_code?: number | null;
+  duration_ms?: number | null;
 }
 
 export interface ExecuteSimpleFinalResponse {
   mission_id: string;
   status: string;
   lifecycle_state: string;
+  tool_name?: string;
   reconciliation_required?: boolean;
   cancellation_reason?: string | null;
   step_results?: MissionStepResult[];
   not_executed_steps?: MissionNotExecutedStep[];
   mission_failure_record?: MissionFailureRecord | null;
+  test_run_result?: MissionTestRunResult | null;
 }
 
 export type ExecuteSimpleOutcome =
@@ -791,6 +796,40 @@ export async function rejectMissionRequest(
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Rejection API Error (${res.status}): ${text || res.statusText}`);
+  }
+  return await res.json();
+}
+
+export interface CancelMissionResponse {
+  mission_id: string;
+  lifecycle_state: string;
+  previous_lifecycle_state: string;
+  job_cancelled: boolean;
+  job_confirmed: boolean;
+  reconciliation_required: boolean;
+  mission_failure_record?: MissionFailureRecord | null;
+}
+
+/**
+ * Task AK (live-test-findings-20261124) item 2/9: POST /api/v1/missions/{id}/cancel --
+ * stops a mission that is RUNNING/DISPATCHED (a node action in flight) or still
+ * COMMITTED (awaiting approval). Throws with the backend's real detail text on a
+ * non-2xx response (e.g. 409 MISSION_ALREADY_TERMINAL), never silently swallowed --
+ * a caller closing a modal on a failed cancel must still know the mission is
+ * still running.
+ */
+export async function cancelMission(
+  missionId: string,
+  workspaceId: string
+): Promise<CancelMissionResponse> {
+  const res = await fetchOrchestratorRaw(
+    `/api/v1/missions/${encodeURIComponent(missionId)}/cancel`,
+    { method: "POST" },
+    workspaceId
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Cancel Mission API Error (${res.status}): ${text || res.statusText}`);
   }
   return await res.json();
 }
