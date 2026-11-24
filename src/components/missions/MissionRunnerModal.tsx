@@ -123,7 +123,24 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
     setHasDeliverables(false);
   };
 
+  // Task AK (live-test-findings-20261124) item 9: closing this modal while a mission
+  // is actively dispatching/resuming used to silently hide it -- the mission itself
+  // kept running on the backend with no warning that closing does not stop it. Never
+  // auto-cancels on close (that would be a bigger, unasked-for behavior change) --
+  // just makes it impossible to close past this without knowing. The run stays
+  // tracked in "Resumed Execute-Mission Runs" (saveMissionRun already covers this),
+  // which now also has its own Cancel button (item 2/9) for anyone who does want to
+  // stop it from there.
   const handleClose = () => {
+    if (phase === "running" || phase === "resuming") {
+      const stillWantsToClose = window.confirm(
+        "This mission is still running in the background. Closing this window will " +
+          "NOT stop it -- it keeps running and can be reviewed or cancelled later from " +
+          "\"Resumed Execute-Mission Runs\" on the Missions page.\n\n" +
+          "Close anyway?"
+      );
+      if (!stillWantsToClose) return;
+    }
     resetRunState();
     setObjective("");
     setEnableTwoStagePlanning(false);
@@ -538,6 +555,15 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
                   <AlertTriangle className="w-4 h-4" />
                   <span>Mission failure record</span>
                 </div>
+                {/* Task AK (live-test-findings-20261124) item 8: failure_error_code is the
+                    actual human-readable reason this mission failed -- was previously built
+                    (and persisted) but never shown here, leaving a failed mission looking
+                    unexplained even though the backend already knew exactly why. */}
+                {finalResult.mission_failure_record.failure_error_code && (
+                  <div className="font-mono text-[11px] text-rose-200 font-semibold">
+                    {finalResult.mission_failure_record.failure_error_code}
+                  </div>
+                )}
                 <div className="font-mono text-[11px] text-rose-200 space-y-1">
                   <div>failed_step_id: {finalResult.mission_failure_record.failed_step_id ?? "—"}</div>
                   <div>failed_tool_name: {finalResult.mission_failure_record.failed_tool_name ?? "—"}</div>
@@ -546,6 +572,34 @@ export const MissionRunnerModal: React.FC<MissionRunnerModalProps> = ({
                 {finalResult.mission_failure_record.output_tail && (
                   <pre className="p-2.5 bg-rose-950/40 border border-rose-800/60 rounded text-[11px] font-mono text-rose-200 overflow-x-auto overflow-y-auto max-h-48 whitespace-pre-wrap">
                     {finalResult.mission_failure_record.output_tail}
+                  </pre>
+                )}
+              </div>
+            )}
+
+            {/* Task AK (live-test-findings-20261124) item 7: test.run's own stdout/
+                stderr/exit_code/duration -- surfaced by the backend as a flat
+                test_run_result field (item 3), shown here regardless of whether the
+                mission ultimately COMPLETED or FAILED, since a failing test's output is
+                exactly what explains the failure. */}
+            {finalResult.test_run_result && (
+              <div className="p-3.5 bg-app-secondary border border-app-border rounded-xl space-y-2 text-xs">
+                <div className="flex items-center justify-between text-app-text font-semibold">
+                  <span>test:run result</span>
+                  <span className="font-mono text-[11px] text-app-dim">
+                    exit_code={finalResult.test_run_result.exit_code ?? "—"}
+                    {finalResult.test_run_result.duration_ms != null &&
+                      ` · ${finalResult.test_run_result.duration_ms}ms`}
+                  </span>
+                </div>
+                {finalResult.test_run_result.stdout && (
+                  <pre className="p-2.5 bg-app-tertiary border border-app-border rounded text-[11px] font-mono text-app-text overflow-x-auto overflow-y-auto max-h-48 whitespace-pre-wrap">
+                    {finalResult.test_run_result.stdout}
+                  </pre>
+                )}
+                {finalResult.test_run_result.stderr && (
+                  <pre className="p-2.5 bg-rose-950/40 border border-rose-800/60 rounded text-[11px] font-mono text-rose-200 overflow-x-auto overflow-y-auto max-h-48 whitespace-pre-wrap">
+                    {finalResult.test_run_result.stderr}
                   </pre>
                 )}
               </div>

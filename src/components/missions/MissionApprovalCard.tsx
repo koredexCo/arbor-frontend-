@@ -1,5 +1,5 @@
-import React from "react";
-import { ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
+import React, { useState } from "react";
+import { ShieldCheck, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
 import {
   resolveNodeApprovalMode,
   resolveRequiresStrongConfirmation,
@@ -43,8 +43,19 @@ export const MissionApprovalCard: React.FC<MissionApprovalCardProps> = ({
     approvalDetail.requires_strong_confirmation
   );
   const awaitingStep = approvalDetail.plan_preview?.find((s) => s.status === "awaiting_approval");
+  // Task AK (live-test-findings-20261124) item 10: when there's no plan_preview step to
+  // name (a single-action mission has no plan_preview at all), this falls back to the
+  // approval REQUEST id -- a genuinely different value from a step id, so the label
+  // shown below must say which one it actually is rather than always saying "step id".
+  const isRealStepId = awaitingStep !== undefined;
   const confirmationTargetId = awaitingStep?.step_id ?? approvalDetail.request_id ?? "";
   const confirmationSatisfied = !requiresStrongConfirmation || confirmText === confirmationTargetId;
+  const [copied, setCopied] = useState(false);
+  const handleCopyConfirmationId = async () => {
+    await navigator.clipboard.writeText(confirmationTargetId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="space-y-4">
@@ -124,9 +135,20 @@ export const MissionApprovalCard: React.FC<MissionApprovalCardProps> = ({
 
       {actionsEnabled && requiresStrongConfirmation && (
         <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg space-y-1.5">
-          <label className="text-[11px] text-rose-300 font-semibold block">
-            High-risk step -- type the exact step id (
-            <span className="font-mono">{confirmationTargetId}</span>) to enable Approve:
+          <label className="text-[11px] text-rose-300 font-semibold flex items-center gap-1.5 flex-wrap">
+            <span>
+              High-risk step -- type the exact {isRealStepId ? "step id" : "approval request id"} (
+            </span>
+            <span className="font-mono">{confirmationTargetId}</span>
+            <button
+              type="button"
+              onClick={handleCopyConfirmationId}
+              title="Copy to clipboard"
+              className="p-0.5 rounded text-rose-300/80 hover:text-rose-200 hover:bg-rose-500/20 transition-colors"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            </button>
+            <span>) to enable Approve:</span>
           </label>
           <input
             type="text"
