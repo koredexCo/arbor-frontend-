@@ -1,0 +1,24 @@
+{
+  "arbor-edit-checks": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          { "type": "command", "command": "python .agents/hooks/arbor_check.py pre", "timeout": 10 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          { "type": "command", "command": "python .agents/hooks/arbor_check.py post", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      { "type": "command", "command": "python .agents/hooks/arbor_check.py stop", "timeout": 120 }
+    ]
+  }
+}
